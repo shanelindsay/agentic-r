@@ -1,0 +1,5 @@
+name: r-core
+channels:
+  - conda-forge
+dependencies:
+  - r-base=4.2
