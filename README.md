@@ -51,6 +51,16 @@ The wrapper runs `Rscript` inside a named environment.
 * Ask the agent to **add one predictor** or **change trimming**, but keep runs scripted: “Edit `R/02_model.R` to add `+ neighbors` and update `results/metrics.yml`.”
 * Commit on a branch; raise a PR so the diff shows only what changed.
 
+## Scientific thinking skills library
+
+This repo now bundles the **scientific-thinking** skill cards from K-Dense AI’s [Claude Scientific Skills](https://github.com/K-Dense-AI/claude-scientific-skills) collection. The content lives in `skills/scientific-thinking/` and includes detailed guidance for:
+
+- literature reviews, hypothesis generation, exploratory data analysis
+- critical review, peer review, scholar evaluation, and scientific brainstorming
+- statistical analysis, visualization, writing, and document-format skills (PDF, DOCX, PPTX, XLSX)
+
+The skill content is licensed under MIT per `skills/scientific-thinking/LICENSE.md`, and each document skill subfolder carries additional notices where provided by the source project.
+
 ## Attribution
 
 * SCLP: Wang et al., 2025. Trial-level data on OSF; paper open access. ([PMC][1])
