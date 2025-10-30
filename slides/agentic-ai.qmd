@@ -2,7 +2,7 @@
 title: "Agentic AI for reproducible language science: from prompt to pipeline"
 format:
   pptx:
-    reference-doc: template.potx
+    reference-doc: ../talk/nord-theme.potx
 execute:
   eval: false
 toc: false
@@ -260,4 +260,3 @@ Timing: 28:00-29:00. Close with four rules of thumb.
 Timing: 29:00-40:00. Keep a slide visible with repo URL and a QR code placeholder.
 :::
 ![Repo URL / QR code placeholder (non-generative)](placeholder.png)
-
