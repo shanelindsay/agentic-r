@@ -3,3 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - r-base=4.2
+  - quarto-cli
+  - r-yaml
+  - r-here
+  - r-ggplot2
