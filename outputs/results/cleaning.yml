@@ -1,0 +1,9 @@
+timestamp: "2025-10-31T13:29:19+0000"
+trimming:
+  correct_only: true
+  rt_min_ms: 200
+  rt_max_ms: 2000
+counts:
+  total_trials: 12
+  kept_trials: 9
+  dropped_trials: 3 

@@ -15,6 +15,10 @@ stopifnot(file.exists(fig_path))
 metrics <- yaml::read_yaml(metrics_path)
 cleaning <- yaml::read_yaml(cleaning_path)
 
+stopifnot(!is.null(metrics$n_obs))
+N <- as.integer(metrics$n_obs)
+stopifnot(!is.na(N))
+
 # helpers for formatting
 fmt3 <- function(x) sprintf("%.3f", x)
 fmt6 <- function(x) sprintf("%.6f", x)
@@ -57,7 +61,7 @@ data.frame(
 
 ## Model Metrics
 
-Model: lm(mean_log_rt ~ log_freq + strokes) (N = )
+Model: lm(mean_log_rt ~ log_freq + strokes) (N = 4)
 
 R² = 0.998.
 
@@ -82,11 +86,7 @@ data.frame(
 ## RT Histogram (kept trials)
 
 ``` r
-if (file.exists(fig_path)) {
-  knitr::include_graphics(fig_path)
-} else {
-  cat("Figure not found: ", fig_path)
-}
+knitr::include_graphics(fig_path)
 ```
 
 ![](../outputs/figures/rt_hist.png)
