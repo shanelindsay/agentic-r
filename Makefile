@@ -7,11 +7,11 @@ outputs/data/processed.csv: data/raw/sclp_sample.csv data/raw/cld_sample.csv R/0
 outputs/figures/rt_hist.png outputs/results/cleaning.yml: data/raw/sclp_sample.csv R/02_explore.R
 	./scripts/run_r.sh R/02_explore.R
 
-outputs/results/metrics.yml: outputs/data/processed.csv R/02_model.R
-	./scripts/run_r.sh R/02_model.R
+outputs/results/metrics.yml: outputs/data/processed.csv R/03_model.R
+	./scripts/run_r.sh R/03_model.R
 
-report: outputs/results/metrics.yml reports/analysis.qmd
-	./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
+report: outputs/results/metrics.yml outputs/results/cleaning.yml outputs/figures/rt_hist.png reports/analysis.qmd
+	./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir $(CURDIR)/outputs/reports
 
 data: outputs/data/processed.csv
 

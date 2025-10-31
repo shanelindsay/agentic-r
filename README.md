@@ -32,7 +32,7 @@ If you use micromamba:
 
 ```bash
 ./scripts/run_r.sh R/01_prepare.R
-./scripts/run_r.sh R/02_model.R
+./scripts/run_r.sh R/03_model.R
 ```
 
 The wrapper runs `Rscript` inside a named environment.
@@ -48,12 +48,12 @@ The wrapper runs `Rscript` inside a named environment.
 
 * `R/01_prepare.R`: trims trials, aggregates to per-character `mean_log_rt` (ms on log scale) and `acc_rate`, joins to CLD predictors → writes `outputs/data/processed.csv`.
 * `R/02_explore.R`: quick trim counts and a histogram from trial-level data → writes `outputs/results/cleaning.yml` and `outputs/figures/rt_hist.png`.
-* `R/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
+* `R/03_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
 * `reports/analysis.qmd`: reads YAML and figure, renders to `outputs/reports/`.
 
 ## Suggested agent use
 
-* Ask the agent to **add one predictor** or **change trimming**, but keep runs scripted: “Edit `R/02_model.R` to add `+ neighbors` and update `results/metrics.yml`.”
+* Ask the agent to **add one predictor** or **change trimming**, but keep runs scripted: “Edit `R/03_model.R` to add `+ neighbors` and update `results/metrics.yml`.”
 * Commit on a branch; raise a PR so the diff shows only what changed.
 
 ## Scientific thinking skills library

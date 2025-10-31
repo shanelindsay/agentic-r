@@ -1,8 +1,7 @@
-"# R/02_model.R
+# R/03_model.R
 # Fit a tiny model and write a diffable YAML with key metrics.
 # Input:  outputs/data/processed.csv
 # Output: outputs/results/metrics.yml
-" -> NULL
 
 suppressWarnings({
   dir.create(here::here("outputs","results"), showWarnings = FALSE, recursive = TRUE)
