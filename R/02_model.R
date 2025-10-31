@@ -1,8 +1,12 @@
 # R/02_model.R
 # Fit a tiny model and write a diffable YAML with key metrics.
+# Input:  outputs/data/processed.csv
+# Output: outputs/results/metrics.yml
 
-dir.create("results", showWarnings = FALSE, recursive = TRUE)
-d <- read.csv("data/processed/merged.csv", fileEncoding = "UTF-8")
+suppressWarnings({
+  dir.create(here::here("outputs","results"), showWarnings = FALSE, recursive = TRUE)
+})
+d <- read.csv(here::here("outputs","data","processed.csv"), fileEncoding = "UTF-8")
 
 stopifnot(all(c("mean_log_rt","log_freq","strokes") %in% names(d)))
 mod <- lm(mean_log_rt ~ log_freq + strokes, data = d)
@@ -12,11 +16,11 @@ co <- coef(mod)
 r2 <- s$r.squared
 n  <- nrow(d)
 
-out <- "results/metrics.yml"
+out <- here::here("outputs","results","metrics.yml")
 lines <- c(
   sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
   'model: lm(mean_log_rt ~ log_freq + strokes)',
-  sprintf('n: %d', n),
+  sprintf('n_obs: %d', n),
   'coefficients:',
   sprintf('  intercept: %.6f', unname(co[1])),
   sprintf('  log_freq: %.6f', unname(co["log_freq"])),

@@ -112,13 +112,10 @@ Assume knowledge of R (applies to Python and other tools too)
 
 # Workflow
 
-- Makefile
-- R scripts
-- Quarto Markdown (RMarkdown) report
-
-# Example: Lexical Decision in Chinese
-
-Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods, 57, 206. https://doi.org/10.3758/s13428-025-02701-7
+- Makefile + two small R scripts (`01_prepare.R`, `02_model.R`) + Quarto report
+- `configs/cleaning.yml` holds the shared trimming parameters + data sources
+- Outputs land in `outputs/{data,figures,results,reports}` (diffable YAML/CSV/MD)
+- Explain changes in the PR description
 
 # Example: Lexical Decision in Chinese
 
