@@ -37,14 +37,13 @@ If you use micromamba:
 
 The wrapper runs `Rscript` inside a named environment.
 
-## Data (tiny, curated slices)
+## Data 
 
-See the slide‑ready cheat‑sheet with talk‑safe claims, licences, and fetch locations: `docs/data-sources.md`.
+See the licences, and fetch locations: `docs/data-sources.md`.
 
-* **SCLP trial‑level data**: trial‑level lexical decision for 8,105 characters + 4,864 pseudocharacters. Download full data from OSF (linked in the article), then use `scripts/build_raw_samples.R` to create a small slice and commit it as `data/raw/sclp_sample.csv`. See Wang et al., 2025. [DOI][sclp-doi]
-* **CLD predictors**: lexical variables for simplified Mandarin words. Download from the Tübingen repository or use the online interface, then create a small slice `data/raw/cld_sample.csv` with at least `char`, `log_freq`, `strokes`. See Sun et al., 2018. [DOI][cld-paper]
+* **SCLP trial‑level data**: trial‑level lexical decision for 8,105 characters + 4,864 pseudocharacters. 
 
-> We **do not** redistribute the full datasets here. Please follow the providers’ terms when creating the tiny samples.
+* **CLD predictors**: lexical variables for simplified Mandarin words. 
 
 ## How it works
 
@@ -53,10 +52,6 @@ See the slide‑ready cheat‑sheet with talk‑safe claims, licences, and fetch
 * `R/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
 * `reports/analysis.qmd`: reads YAML and figure, renders to `outputs/reports/`.
 
-## Suggested agent use
-
-* Ask the agent to **add one predictor** or **change trimming**, but keep runs scripted: “Edit `R/02_model.R` to add `+ neighbors` and update `results/metrics.yml`.”
-* Commit on a branch; raise a PR so the diff shows only what changed.
 
 ## Scientific thinking skills library
 

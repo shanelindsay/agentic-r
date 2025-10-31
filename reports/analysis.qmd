@@ -63,6 +63,12 @@ data.frame(
     cleaning$counts$dropped_trials
   )
 )
+
+```
+## RT Histogram (kept trials)
+
+```{r}
+knitr::include_graphics(fig_path)
 ```
 
 ## Model Metrics
@@ -84,8 +90,3 @@ data.frame(
 )
 ```
 
-## RT Histogram (kept trials)
-
-```{r}
-knitr::include_graphics(fig_path)
-```

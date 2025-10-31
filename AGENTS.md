@@ -9,11 +9,6 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 * Priorities: reproducibility, clarity, well documented workflows.
 * Default approach: prefer simple, auditable steps over clever automation.
 
-## 2) Canonical Workflow & Repository Roles
-
-**Single source of truth for compute:** `{targets}` in `_targets.R` and modular functions in `R/`.
-**Reports (QMD):** present/diagnose results; they do not own heavy computation.
-
 **Directory contract**
 
 - `R/` -> reusable functions only; no side effects on import; no top-level I/O.

@@ -1,8 +1,4 @@
-# Data Sources Cheat‑Sheet (Slide‑Ready)
-
-This page documents the two datasets used in the demo, what you can safely claim on a slide, where to fetch them, licence/availability, and how they plug into the Makefile + R scripts.
-
----
+# Data Sources 
 
 ## 1) SCLP — Simplified Chinese Lexicon Project (2025)
 
@@ -10,8 +6,6 @@ What it is
 
 - Character lexical‑decision megastudy for 8,105 simplified characters plus 4,864 pseudocharacters (trial‑level). Open‑access article (CC BY 4.0). The authors provide trial‑level data and stimuli materials. DOI: https://doi.org/10.3758/s13428-025-02701-7  
 - Data and materials are hosted on OSF; analysis code and images on GitHub (links provided in the article).
-
-Talk‑safe claims (pasteable)
 
 - Scope: 8,105 characters + 4,864 pseudocharacters; published in Behavior Research Methods, June 2025.  
 - Trial‑level file: `TrialsSCLP.csv` (approximately 376k × 7) with columns `item, subject, lexicality, level, accuracy, rt, zscore`.  
@@ -41,7 +35,7 @@ What it is
 - Large‑scale lexical database for simplified Mandarin with >260 variables and 48,644 words (4,895 unique characters; 3,913 one‑character words). Introduced by Sun et al. (2018, Behavior Research Methods).  
 - Downloadable “text dump” (ZIP) as CLD 2.1 from the University of Tübingen repository; an online search/download site is also available.
 
-Talk‑safe claims (pasteable)
+Talk‑safe claims 
 
 - CLD 2.1 provides many lexical/orthographic variables (e.g., frequency measures, stroke counts, neighbourhood indices).  
 - Free to download from the Tübingen repository; a short PDF and README are supplied.  
@@ -75,41 +69,7 @@ This is exactly what the included scripts do:
 
 ---
 
-## Slide text (ready to paste)
-
-- “We pair trial‑level Chinese lexical decision (SCLP) with lexical predictors (CLD). Our agent proposes a small change; we re‑run a scripted pipeline and review a YAML diff in GitHub.”  
-- “Data sources: SCLP trial‑level OSF (7 columns, ~376k rows); CLD 2.1 Tübingen dump (frequency & complexity indices).”
-
----
-
-## Practicalities for the README
-
-Availability & attribution
-
-- SCLP article is CC BY 4.0; it lists OSF for `TrialsSCLP.csv` and GitHub for images/code. Cite the article and point to those locations.  
-- CLD 2.1 Tübingen record + online interface at chineselexicaldatabase.com; cite both the BRM article and the dataset record.
-
-Encoding
-
-- Use UTF‑8 throughout. The repo’s scripts already pass `fileEncoding = "UTF-8"`.
-
-Licences
-
-- SCLP article is CC BY 4.0 (article text). Data licence/terms are on the OSF node—follow those terms.  
-- CLD 2.1 is distributed via the Tübingen repository; rely on the licence statement on that record when redistributing slices.
-
----
-
-## Pre‑slice guidance (tiny, lawful samples)
-
-- SCLP sample: 120–200 character trials (not pseudocharacters) across multiple subjects. Keep columns `char, rt_ms, correct` in your small CSV. Map from SCLP names: `item → char`, `rt → rt_ms`, `accuracy → correct`.  
-- CLD sample: The same characters with `log_freq` and `strokes`. If your export uses different labels (e.g., `zipf`, `n_strokes`), rename in your sample.
-
-Use `scripts/build_raw_samples.R` to generate `data/raw/sclp_sample.csv` and `data/raw/cld_sample.csv` from full sources.
-
----
-
-## APA‑7 references
+## References
 
 - Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods, 57, 206. https://doi.org/10.3758/s13428-025-02701-7  
 - Sun, C. C., Hendrix, P., Ma, J. Q., & Baayen, R. H. (2018). Chinese Lexical Database (CLD): A large‑scale lexical database for simplified Chinese. Behavior Research Methods, 50(5), 2606–2629. https://doi.org/10.3758/s13428-018-1038-3  
