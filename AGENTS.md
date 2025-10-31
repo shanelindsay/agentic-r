@@ -17,10 +17,8 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 **Directory contract**
 
 - `R/` -> reusable functions only; no side effects on import; no top-level I/O.
-- `_targets.R` -> complete pipeline graph and parameters; reproducible + deterministic.
 - `scripts/` -> orchestration, CLI entrypoints, Slurm wrappers, diagnostics helpers (tiny, no heavy compute).
 - `reports/` -> Quarto "views" that **read** pipeline outputs (QC, diagnostics, inference stubs).
-- `archive/legacy-qmd/` -> historical stage-by-stage QMDs. **Do not add new numbered QMDs here.**
 - `outputs/` -> all rendered artefacts (figures, tables, md/html from reports).
 
 **Non-negotiables**
@@ -56,18 +54,6 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 
 ```
 
-### 2.3 HPC: cluster jobs
-
-* Full run guide: `docs/hpc.md` covers Viper context vars, array templates, log locations, and troubleshooting.
-* Harvest array status: `make harvest-status` which writes `outputs/status/status.csv`.
-* Submit arrays with notify: `dev/submit_array.sh --array 1-20 -- dev/slurm/test_slurm.slurm`.
-* Dashboards: `watch -n 10 ~/bin/cluster-dash.sh`.
-* Diagnostics templates live in `dev/slurm/` (array template: `dev/slurm/array_template.slurm`).
-* Pipeline QA: follow `README.md` ("Hardening & validation checklist") -- `make check-env` -> `make targets-exp2 SURR_N=0` -> `make targets-exp1` -> `make validate` -> `make harvest-status`.
-* Avoid inline `R -e` commands through multiple shell layers (quoting breaks in Slurm). Prefer `sbatch dev/slurm/run_targets.sbatch` or a tiny script instead of passing `-e` via wrappers.
-* Lightweight prep is fine on the login node, but run anything long or interactive through Slurm (`sbatch` or `interactive`). When an interactive shell is required, ask Shane to launch a new agent inside that session after authentication.
-
-
 ## 3) Git & PR Workflow (Atomic + Frequent)
 
 We use GitHub for code, manuscript preparation, and project management. When you hear "issue" - assume github issue (and interact with gh CLI - you have token to access).
@@ -78,7 +64,7 @@ We use GitHub for code, manuscript preparation, and project management. When you
 * Be clear which branch you are working on. Pull regularly so `main` stays synced.
 * Commit small, logical changes frequently. After progress, commit and push or pull frequently.
 * Keep the working tree tidy. Avoid untracked files - assume as default files should be tracked. If in doubt about tracking, ask.
-* Track **generated outputs under `outputs/`** (CSV, MD, HTML, PNG, etc.) so reviewers see what changed. **Do NOT** track rendered artefacts under `reports/` (see `.gitignore`); QMDs must write to `outputs/`.
+* Track **generated outputs under `outputs/`** (CSV, MD, HTML, PNG, etc.) so reviewers see what changed.
 * Do not delete generated files in `outputs/` unless explicitly requested or they're superseded by a rename in the same PR (call this out in the PR body).
 
 ## Atomic Commits and Git management
@@ -119,7 +105,7 @@ We may have multiple agents working in parallel, and users working on different 
 ### 3.2 Code review and approval
 
 * We do not use CI in these workflows.
-* Use Pull Requests for review with Shane. You can ask for reviews on commits.
+* Use Pull Requests for review. You can ask for reviews on commits.
 * Reference the driving issue in the PR description. Include a closing keyword, for example `Closes #123`.
 
 ## 4) Issue-Driven Project Management
@@ -256,7 +242,6 @@ Quarto writes cached renders into `_freeze/` directories adjacent to each QMD (e
 * Long running tooling such as tests, docker compose, or migrations must always be invoked with sensible timeouts or in non interactive batch mode. Never leave a shell command waiting indefinitely. Prefer explicit timeouts, scripted runs, or log polling after the command exits.
 * If a Codex run is too long or stuck on tool calling, apply the same rule. Use non interactive batch, explicit timeouts, or exit and resume with log inspection.
 
-
 ### 7.9 Definition of Done (checklists)
 
 **Pipeline change (R/ + targets)**
@@ -269,13 +254,6 @@ Quarto writes cached renders into `_freeze/` directories adjacent to each QMD (e
  - [ ] Reads from outputs only; no heavy compute.
  - [ ] `freeze` set appropriately; renders to `outputs/reports/...`.
  - [ ] Example render command added to `reports/README.md`.
-
-### 7.10 Policy Checks (to automate later)
-
-* Fail if any `reports/**/*.qmd` sets `output-dir` inside `reports/`.
-* Warn if any new file under `scripts/**` is a `.qmd`.
-* Warn if new symbols start with `m4_`.
-* Warn if relative "../" paths appear outside `archive/`.
 
 ## 8) Finalising
 
