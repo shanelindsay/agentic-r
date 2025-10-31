@@ -1,143 +1,195 @@
-## Slide 1 — Title (00:00–00:45)
+# **Agentic AI for Reproducible Language Science: From Prompt to Pipeline**
 
-* Agentic AI for reproducible language science: from prompt to pipeline
-* Speaker + affiliation
-* Link/QR to repo (demo materials)
+Shane Lindsay
 
-## Slide 2 — Quick poll (00:45–01:30)
+University of Hull
 
-* Where are you with agents today?
+https://github.com/shanelindsay/agentic-r/
 
-  * Never used · Tried a bit · Use weekly · Use daily
-* What part of your workflow would you try first?
+# Agenda
 
-  * Cleaning · Modelling · Reporting · Something else
+- Why now? (spoiler: they finally work)
+- What is an agent?
+- Demo: agents + reproducible research patterns
+- Practical patterns you can steal
 
-## Slide 3 — Why agents now (01:30–03:00)
+# Pre-requisites 
 
-* **Smart enough** for multi‑step, tool‑using tasks
-* **Cheap enough** to be practical for students/labs
-* Ecosystem maturity: IDEs, APIs, and coding agents are accessible
-* Bottom line: it’s finally the **year of agents**
+- Assume you have used LLM Chatbots e.g. ChatGPT, ==探索未至之境==
+- Assume knowledge of R (but everything applies to other tools e.g. Python)
 
-## Slide 4 — What is an agent (03:00–04:30)
+# Why agents now?
 
-* Planner · Tool‑caller · Executor · Reporter (logs)
-* Think “new lab member arriving cold to your repo”
-* Best when work is scripted, documented, and rerunnable
+- LLM models are now **smart enough** for multi-step, tool-using tasks
+- They are **cheap enough** to be practical for students and labs
+- Agents are accessible 
+- The technology is finally useful for everyday research work
 
-## Slide 5 — Costs (04:30–05:45)
+By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
 
-* One **knob**: **speed vs spend** (smaller/faster vs larger/slower)
-* Keep prompts short; avoid chatty back‑and‑forth
-* Batch changes; run only what you’ll keep
+# What is an agent?
 
-## Slide 6 — Reproducible science: the brief (05:45–07:30)
+- General purpose LLM that lives inside a computer
+- Read/write access to file system, with access to bash/powershell
+- Whatever you can do, it can do with (with guardrails/approvals)
+- Can work automously for typically < 20 minutes 
+- Search web, write code, execute it, write it up
+- Full end-to-end scientific process
+  - Today focused on analyses
 
-* Research **codebase** with a lifecycle: **plan → execute → review → share → re‑run**
-* Reproducibility = others can repeat the steps and get the same artefacts
-* Agents fit this when outputs are **scripted, logged, and diffable**
+# Costs
 
-## Slide 7 — Coding patterns & agents (07:30–09:30)
+- One knob: **quick and fast vs slow and smart**
+- Daily heavy use: $200 per month
+- Moderate use: $100 per month
+- Light use: 20$ per month
+- Free tiers
 
-* **Monolithic script**: quick start; fragile; agents may “sprawl”
-* **Numbered scripts**: clearer stages; agent edits are localised
-* **Makefile‑orchestrated scripts**: explicit dependencies; deterministic runs
-* How agents plug in: draft changes → you run → results are diffed
+# Examples
 
-## Slide 8 — Repo you’ll see (09:30–10:30)
+- US: Codex (OpenAI), Claude Code (Anthropic), Gemini (Google), Cursor (Cursor), CoPilot (Microsoft)
+- China: Kimi K2, Qwen 3, GLM 4.5
+- Currently: OpenAI Codex is smartest, Claude Code 4.5 2nd, GLM/K2 best for cost
 
-* README with quickstart
-* `Makefile` + two small R scripts (`01_prepare.R`, `02_model.R`)
-* `data/raw` (tiny, locked) · `data/processed` · `results/metrics.yml`
+# Promise of agents
 
-## Slide 9 — Minimal agent rules (10:30–11:30)
+- Incresease speed
+- Increase capability
 
-* Use the wrapper to run scripts; do not touch `data/raw`
-* Write results to `results/` as CSV/YAML
-* Explain changes in the PR description
+# Perils of agents
 
-## Slide 10 — Demo setup (11:30–12:00)
+- Errors
+- Loss of control and responsibility
+- Atrophy of skills
+- Technical demands / complexity (tech debt)
 
-* Baseline: `make` once → show `results/metrics.yml`
-* Backup: pre‑baked PR + 30–45 s clip of a successful run
+# Using agents
 
-## Slide 11 — Agent demo: **Builder** (12:00–16:00)
+- Think of an agent as a **new lab member** arriving cold to your research project
+- Very keen, very fast, very smart, sometimes wise, sometimes also dumb
+- Agents work best when projects are structured, documented, and runnable
+- Structure: encourages following consistent patterns in your workflows
 
-* Prompt: “Add *neighbourhood* as a predictor; write coefficient to `metrics.yml`; update README ‘How to run’”
-* Re‑run: `make` deterministically
-* Show: small diff in `metrics.yml` (new field + timestamp)
+# Why reproducible research?
 
-## Slide 12 — Agent demo: **Checker** (16:00–18:30)
+- **Verify findings** - Others can validate your results
+- **Reduce bias **- Transparency in methods
+- **Catch errors** - Community review improves quality
+- **Preserve knowledge** - Methods survive beyond individual researchers
+- *Increasingly required by funding agencies and journals*
 
-* Prompt: “Given the PR diff + `metrics.yml`, produce a checklist”
+# Reproducible research and Agentic AI are best friends
 
-  * Wrapper used? Raw data untouched? Outputs updated?
-* Post checklist as PR comment; you approve or request changes
+- Research codebase lifecycle: **plan → execute → review → share → re-run**
+- Reproducibility means others (i.e. *agents*) can repeat the same steps and get the same artefacts
+- Agents support reproducibility when outputs are scripted, logged and text based
 
-## Slide 13 — Interactive vs script‑based (18:30–20:00)
+# Coding patterns and how agents interact
 
-* Draft interactively; **execute** by script/Makefile
-* Benefits: determinism, speed to rerun, easy review
+- Monolithic 1000 line script : quick start, fragile for change; sprawl, hard to understand and debug
+- Numbered scripts: clearer workflow, smaller functional units
+- Makefile-orchestrated scripts: explicit dependencies; deterministic runs
 
-## Slide 14 — GitHub review (20:00–21:30)
+*Goal: press a button, raw data transformed directly to numbers in a manuscript*
 
-* Branch → PR → concise description → human review → merge
-* Keep changes small and scoped; rationale in commit message
+# Containers and predictability
 
-## Slide 15 — End‑to‑end reporting (21:30–22:45)
+- Containers are cloud based (unix) operating systems - spun up and thrown away
+- Agents are stateless (no memory!); containers provide a predictable starting point
+- If a stranger can run the repo from just looking at documentation, an agent can too
+- Running Agents in containers makes them safe - can only operate inside the container
 
-* Manuscript/report reads numbers from `results/`
-* Transparent, traceable updates over time
+# Github 
 
-## Slide 16 — Containers: why they help (22:45–24:15)
+- GIthub provides version tracking
+- Monitor and approve any changes (Pull requests)
+- Protect work from being overwritten (history always saved)
 
-* Agents are **stateless**; containers provide a **predictable start**
-* If a **stranger** can run it, an **agent** can too
+# shanelindsay/agentic-R Github Repo
 
-## Slide 17 — Agent patterns to copy (24:15–25:45)
+- AGENTS.md > 
+- dev/run-in-env.sh > get R working using micromamba
+- environment.yml - R version and packages to use (numbered, reproducible)
+ 
+- Agents file tells agent to use the wrapper to run scripts
 
-* **Builder** proposes edits
-* **Checker** audits diffs and outputs
-* Optional **Critic** suggests tests/diagnostics
-* Humans approve and run
 
-## Slide 18 — Where to start (25:45–27:00)
+# Workflow
 
-* Pick one stage: cleaning, modelling, or reporting
-* Keep tasks small; measure time saved against review time
+- Makefile + two small R scripts (`01_prepare.R`, `02_model.R`)
+- `data/raw`  `data/processed`, `results/metrics.yml`
+- Explain changes in the PR description
 
-## Slide 19 — Audience‑aware options (27:00–28:00)
+# Example: Lexical Decision in Chinese
 
-* Systems you might see locally: Qwen · Kimi · GLM · ERNIE · Hunyuan · Doubao
-* Use what your institution/cloud supports
+- Baseline: run the pipeline once to produce `metrics.yml`
+- Demo data: a tiny, lawful slice of a lexical decision dataset + lexical predictors
+- Backup: pre-baked PR and a 30–45 s recording of a successful run
 
-## Slide 20 — Practical tips (28:00–29:30)
+# Agent demo — Builder
 
-* Short prompts; explicit file paths; one change at a time
-* Write to **diffable** tables; keep raw data read‑only
-* Pre‑record a fallback run for live talks
+- Agent prompt: add one predictor (e.g. neighbourhood), update `02_model.R`, write new coefficient to `metrics.yml`, update README
+- You re-run the pipeline deterministically via the wrapper/Makefile
+- Show the small, scoped diff in `metrics.yml`
 
-## Slide 21 — Memes & memory aids (29:30–30:30)
+# Agent demo — Review
 
-* “If a stranger can run it, an agent can too”
-* “Agents don’t bring cake; they write the README”
-* One tasteful meme (large image, one‑line caption)
+- Second agent reads the PR diff and `metrics.yml` and does a review
+- Human reviews the agent review and approves or requests changes
+- Loop 
 
-## Slide 22 — Take‑home (30:30–31:30)
+# Interactive vs script-based
 
-* Agents **expand capability**
-* **Structure keeps them honest**
-* Container + Makefile + scripts + PRs
+- 
+- Execute changes via scripts/Makefile for determinism and reproducibility
+- Store results as diffable tables for easy review
 
-## Slide 23 — Reserve / buffer (31:30–36:30)
+# GitHub review
 
-* Use for demo latency, brief questions, or a second quick agent tweak
-* If unused, finish with a short recap
+- Branch → PR → concise description → human review → merge
+- Keep commits small and well-scoped; include one-line rationales
+- Use PR comments for agent checklists and reviewer notes
 
-## Slide 24 — Q&A (36:30–40:00)
+# End-to-end reporting
 
-* Repo URL/QR on screen
-* Invite concrete “where would you start?” questions
+- Manuscript or Quarto report reads values from `results/*`
+- This keeps numbers traceable and updates transparent
 
--
+# Agent patterns to copy
+
+- Builder: proposes and edits code
+- Checker: audits diffs and outputs
+- Critic (optional): proposes tests or diagnostics
+- Humans remain the final approvers
+
+# Where to start
+
+- Pick one stage (cleaning, modelling, reporting) and start small
+- Keep tasks atomic; measure time saved against review effort
+
+# Practical tips
+
+- Short, explicit prompts; give file paths and desired outputs
+- Make outputs diffable (CSV/YAML); keep raw data read-only
+- Pre-record a fallback run for live demos
+
+# Memes and memory aids
+
+- Single tasteful meme with one-line caption to reinforce a point
+- Humour lines: “Agents don’t bring cake, but they write the README”; “Keen RA, occasional hallucinations”
+
+# Take-home
+
+- Agents expand what a small team can do
+- Structure (container + Makefile + scripts + PRs) keeps agents honest
+- Start small, review everything, iterate responsibly
+
+# Reserve / buffer
+
+- Space for extra demo tweaks, audience questions, or a second quick agent change
+- If unused, recap the main points
+
+# Q&A
+
+- Show repo URL / QR and contact details
+- Invite concrete “where would you start?” or “what would you like a template for?” questions
