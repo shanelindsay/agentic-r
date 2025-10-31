@@ -1,9 +1,9 @@
-# Agentic R Lexical‑Decision Demo (Makefile pipeline)
+# Agentic R Lexical-Decision Demo (scripts + Quarto)
 
 A minimal, R-focused, agent-friendly pipeline for a **lexical decision** demo:
 - **Task:** character-level lexical decision (RT/accuracy).
-- **Data:** tiny slices from the Simplified Chinese Lexicon Project (SCLP; trial‑level) and the Chinese Lexical Database (CLD; predictors).
-- **Pipeline:** `make` orchestrates two small R scripts → writes a **diffable** results file (`results/metrics.yml`).
+- **Data:** tiny slices from the Simplified Chinese Lexicon Project (SCLP; trial-level) and the Chinese Lexical Database (CLD; predictors).
+- **Pipeline:** `make` orchestrates 3 tiny steps + a report → writes **diffable** outputs under `outputs/` (e.g., `outputs/results/metrics.yml`).
 
 ## Why this repo?
 Agents (e.g., Codex/Claude Code/Cursor) behave like new lab members arriving cold. A tidy repo + Makefile + small scripts gives them structure; you stay in control by running scripts deterministically and reviewing diffs.
@@ -18,10 +18,13 @@ Agents (e.g., Codex/Claude Code/Cursor) behave like new lab members arriving col
 3. Run the pipeline:
 
    ```bash
-   make          # or: Rscript R/01_prepare.R && Rscript R/02_model.R
+   make          # or: make data && make analyse && make report
    ```
-4. Inspect the output:
-   `results/metrics.yml` (intercept/slope(s)/R², plus N and timestamp).
+4. Inspect the outputs:
+   - `outputs/data/processed.csv`
+   - `outputs/results/cleaning.yml`
+   - `outputs/results/metrics.yml` (intercept/slope(s)/R², plus `n_obs` and timestamp)
+   - `outputs/reports/analysis.{html,pdf,docx,md}`
 
 ### Optional: micromamba wrapper
 
@@ -45,8 +48,10 @@ See the slide‑ready cheat‑sheet with talk‑safe claims, licences, and fetch
 
 ## How it works
 
-* `R/01_prepare.R`: trims trials, aggregates to per-character `mean_log_rt` (ms on log scale) and `acc_rate`, joins to CLD predictors → writes `data/processed/merged.csv`.
-* `R/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `results/metrics.yml`.
+* `configs/cleaning.yml`: shared parameters for trimming + file sources (full SCLP + CLD).
+* `R/01_prepare.R`: applies trimming once, writes `outputs/data/trials_filtered.csv`, aggregates to per-character `outputs/data/processed.csv`, and emits cleaning summary + histogram.
+* `R/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
+* `reports/analysis.qmd`: reads YAML and figure, renders to `outputs/reports/`.
 
 ## Suggested agent use
 

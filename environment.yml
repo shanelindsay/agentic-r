@@ -3,3 +3,11 @@ channels:
   - conda-forge
 dependencies:
   - r-base=4.2
+  - quarto
+  - r-yaml
+  - r-here
+  - r-ggplot2
+  - r-jsonlite
+  - r-knitr
+  - r-rmarkdown
+  - tectonic

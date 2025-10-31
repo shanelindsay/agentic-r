@@ -1,0 +1,8 @@
+timestamp: "2025-10-31T14:10:12+0000"
+model: lm(mean_log_rt ~ log_freq + strokes)
+n_obs: 3852
+coefficients:
+  intercept: 6.452355
+  log_freq: -0.070823
+  strokes: 0.013355
+r2: 0.433654 
