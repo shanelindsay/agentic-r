@@ -1,14 +1,17 @@
-# R/01_prepare.R
+"# R/01_prepare.R
 # Read trial-level SCLP slice + CLD predictors; aggregate and join.
 # Input:  data/raw/sclp_sample.csv (columns: char, rt_ms, correct)
 #         data/raw/cld_sample.csv  (columns: char, log_freq, strokes)
-# Output: data/processed/merged.csv
+# Output: outputs/data/processed.csv
+" -> NULL
 
 opts <- options(stringsAsFactors = FALSE)
-dir.create("data/processed", showWarnings = FALSE, recursive = TRUE)
+suppressWarnings({
+  dir.create(here::here("outputs","data"), recursive = TRUE, showWarnings = FALSE)
+})
 
-sclp <- read.csv("data/raw/sclp_sample.csv", fileEncoding = "UTF-8")
-cld  <- read.csv("data/raw/cld_sample.csv",  fileEncoding = "UTF-8")
+sclp <- read.csv(here::here("data","raw","sclp_sample.csv"), fileEncoding = "UTF-8")
+cld  <- read.csv(here::here("data","raw","cld_sample.csv"),  fileEncoding = "UTF-8")
 
 # Basic sanity
 stopifnot(all(c("char","rt_ms","correct") %in% names(sclp)))
@@ -35,5 +38,6 @@ ok <- complete.cases(dat$log_freq) & complete.cases(dat$strokes)
 dat <- dat[ok, ]
 
 # write
-write.csv(dat, "data/processed/merged.csv", row.names = FALSE, fileEncoding = "UTF-8")
-cat(sprintf("Wrote %d rows to data/processed/merged.csv\n", nrow(dat)))
+out_csv <- here::here("outputs","data","processed.csv")
+write.csv(dat, out_csv, row.names = FALSE, fileEncoding = "UTF-8")
+cat(sprintf("Wrote %d rows to %s\n", nrow(dat), out_csv))
