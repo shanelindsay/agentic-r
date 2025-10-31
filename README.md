@@ -32,7 +32,7 @@ If you use micromamba:
 
 ```bash
 ./scripts/run_r.sh R/01_prepare.R
-./scripts/run_r.sh R/03_model.R
+./scripts/run_r.sh R/02_model.R
 ```
 
 The wrapper runs `Rscript` inside a named environment.
@@ -46,15 +46,14 @@ The wrapper runs `Rscript` inside a named environment.
 
 ## How it works
 
-* `configs/cleaning.yml`: shared parameters for trimming reaction times and correctness filters.
-* `R/01_prepare.R`: trims trials (per the config), aggregates to per-character `mean_log_rt` (ms on log scale) and `acc_rate`, joins to CLD predictors → writes `outputs/data/processed.csv`.
-* `R/02_explore.R`: reuses the same trimming settings for counts + histogram → writes `outputs/results/cleaning.yml` and `outputs/figures/rt_hist.png`.
-* `R/03_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
+* `configs/cleaning.yml`: shared parameters for trimming + file sources (full SCLP + CLD).
+* `R/01_prepare.R`: applies trimming once, writes `outputs/data/trials_filtered.csv`, aggregates to per-character `outputs/data/processed.csv`, and emits cleaning summary + histogram.
+* `R/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
 * `reports/analysis.qmd`: reads YAML and figure, renders to `outputs/reports/`.
 
 ## Suggested agent use
 
-* Ask the agent to **add one predictor** or **change trimming**, but keep runs scripted: “Edit `R/03_model.R` to add `+ neighbors` and update `results/metrics.yml`.”
+* Ask the agent to **add one predictor** or **change trimming**, but keep runs scripted: “Edit `R/02_model.R` to add `+ neighbors` and update `results/metrics.yml`.”
 * Commit on a branch; raise a PR so the diff shows only what changed.
 
 ## Scientific thinking skills library

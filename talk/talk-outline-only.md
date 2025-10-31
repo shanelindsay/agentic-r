@@ -116,8 +116,8 @@ By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
 
 # Workflow
 
-- Makefile + three small R scripts (`01_prepare.R`, `02_explore.R`, `03_model.R`) + Quarto report
-- `configs/cleaning.yml` holds the shared trimming parameters
+- Makefile + two small R scripts (`01_prepare.R`, `02_model.R`) + Quarto report
+- `configs/cleaning.yml` holds the shared trimming parameters + data sources
 - Outputs land in `outputs/{data,figures,results,reports}` (diffable YAML/CSV/MD)
 - Explain changes in the PR description
 
@@ -129,7 +129,7 @@ By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
 
 # Agent demo — Builder
 
-- Agent prompt: add one predictor (e.g. neighbourhood), update `03_model.R`, write new coefficient to `metrics.yml`, update README
+- Agent prompt: add one predictor (e.g. neighbourhood), update `02_model.R`, write new coefficient to `metrics.yml`, update README
 - You re-run the pipeline deterministically via the wrapper/Makefile
 - Show the small, scoped diff in `metrics.yml`
 

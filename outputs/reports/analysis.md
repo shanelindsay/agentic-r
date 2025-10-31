@@ -34,7 +34,7 @@ This report reads pre-computed outputs from the simple demo pipeline.
 
 ## Cleaning Summary
 
-The pipeline kept NA of 376101 trials (dropped NA). Settings:
+The pipeline kept 276025 of 376101 trials (dropped 100076). Settings:
 correct-only = TRUE, RT range = 200–2000 ms.
 
 ``` r
@@ -56,8 +56,8 @@ data.frame(
     2      rt_min_ms    200
     3      rt_max_ms   2000
     4   total_trials 376101
-    5    kept_trials     NA
-    6 dropped_trials     NA
+    5    kept_trials 276025
+    6 dropped_trials 100076
 
 ## Model Metrics
 

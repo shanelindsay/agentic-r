@@ -7,6 +7,8 @@
 opts <- options(stringsAsFactors = FALSE)
 suppressWarnings({
   dir.create(here::here("outputs","data"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(here::here("outputs","results"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(here::here("outputs","figures"), recursive = TRUE, showWarnings = FALSE)
 })
 
 # shared cleaning parameters and data paths
@@ -66,7 +68,8 @@ sclp_trim <- sclp[keep, c("char","rt_ms")]
 
 # Persist filtered trials for reuse by other steps
 filt_csv <- here::here("outputs","data","trials_filtered.csv")
-write.csv(sclp[keep, c("char","rt_ms","correct")], filt_csv, row.names = FALSE, fileEncoding = "UTF-8")
+filtered_trials <- sclp[keep, c("char","rt_ms","correct")]
+write.csv(filtered_trials, filt_csv, row.names = FALSE, fileEncoding = "UTF-8")
 
 # mean of log RT per character
 agg_rt <- aggregate(rt_ms ~ char, data = sclp_trim, FUN = function(x) mean(log(x)))
@@ -89,11 +92,10 @@ out_csv <- here::here("outputs","data","processed.csv")
 write.csv(dat, out_csv, row.names = FALSE, fileEncoding = "UTF-8")
 cat(sprintf("Wrote %d rows to %s\n", nrow(dat), out_csv))
 
-# Write cleaning summary YAML
+# Write cleaning summary YAML + histogram
 clean_yaml <- here::here("outputs","results","cleaning.yml")
-dir.create(dirname(clean_yaml), showWarnings = FALSE, recursive = TRUE)
 total <- nrow(sclp)
-kept  <- sum(keep)
+kept  <- nrow(filtered_trials)
 dropd <- total - kept
 lines <- c(
   sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
@@ -107,4 +109,16 @@ lines <- c(
   sprintf('  dropped_trials: %d', dropd)
 )
 cat(paste0(lines, collapse = "\n"), "\n", file = clean_yaml)
-cat(sprintf("Wrote %s and %s\n", clean_yaml, filt_csv))
+
+fig_path <- here::here("outputs","figures","rt_hist.png")
+png(filename = fig_path, width = 800, height = 500)
+hist(
+  filtered_trials$rt_ms,
+  breaks = 40,
+  main = sprintf("RT histogram (kept %d/%d trials)", kept, total),
+  xlab = "RT (ms)",
+  col = "#4477AA"
+)
+invisible(dev.off())
+
+cat(sprintf("Wrote %s, %s, and %s\n", out_csv, clean_yaml, fig_path))
