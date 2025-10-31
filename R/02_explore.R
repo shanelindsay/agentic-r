@@ -1,4 +1,4 @@
-"# R/02_explore.R
+# R/02_explore.R
 # Minimal exploratory/cleaning step for the talk.
 # - Computes trim stats from raw trials (200–2000 ms, correct only)
 # - Saves a quick RT histogram for kept trials
@@ -6,7 +6,6 @@
 # Outputs:
 #   - outputs/figures/rt_hist.png
 #   - outputs/results/cleaning.yml
-" -> NULL
 
 suppressWarnings({
   dir.create(here::here("outputs","figures"), showWarnings = FALSE, recursive = TRUE)
@@ -40,4 +39,3 @@ lines <- c(
 )
 cat(paste0(lines, collapse = "\n"), "\n", file = out_yaml)
 cat(sprintf("Wrote %s and outputs/figures/rt_hist.png\n", out_yaml))
-

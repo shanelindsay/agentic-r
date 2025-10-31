@@ -1,9 +1,8 @@
-"# R/01_prepare.R
+# R/01_prepare.R
 # Read trial-level SCLP slice + CLD predictors; aggregate and join.
 # Input:  data/raw/sclp_sample.csv (columns: char, rt_ms, correct)
 #         data/raw/cld_sample.csv  (columns: char, log_freq, strokes)
 # Output: outputs/data/processed.csv
-" -> NULL
 
 opts <- options(stringsAsFactors = FALSE)
 suppressWarnings({
