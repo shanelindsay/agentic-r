@@ -12,16 +12,28 @@ suppressWarnings({
 sclp <- read.csv(here::here("data","raw","sclp_sample.csv"), fileEncoding = "UTF-8")
 cld  <- read.csv(here::here("data","raw","cld_sample.csv"),  fileEncoding = "UTF-8")
 
+# shared cleaning parameters
+cfg_path <- here::here("configs","cleaning.yml")
+stopifnot(file.exists(cfg_path))
+cfg <- yaml::read_yaml(cfg_path)
+stopifnot(all(c("correct_only","rt_min_ms","rt_max_ms") %in% names(cfg)))
+correct_only <- isTRUE(cfg$correct_only)
+rt_min <- as.numeric(cfg$rt_min_ms)
+rt_max <- as.numeric(cfg$rt_max_ms)
+stopifnot(is.finite(rt_min), is.finite(rt_max), rt_min < rt_max)
+
 # Basic sanity
 stopifnot(all(c("char","rt_ms","correct") %in% names(sclp)))
 stopifnot(all(c("char","log_freq","strokes") %in% names(cld)))
 
-# Trim and aggregate (keep correct, 200–2000 ms)
-keep <- sclp$correct == 1 & sclp$rt_ms >= 200 & sclp$rt_ms <= 2000
-sclp2 <- sclp[keep, c("char","rt_ms")]
+# Trim and aggregate (shared parameters)
+keep <- rep(TRUE, nrow(sclp))
+if (correct_only) keep <- keep & sclp$correct == 1
+keep <- keep & sclp$rt_ms >= rt_min & sclp$rt_ms <= rt_max
+sclp_trim <- sclp[keep, c("char","rt_ms")]
 
 # mean of log RT per character
-agg_rt <- aggregate(rt_ms ~ char, data = sclp2, FUN = function(x) mean(log(x)))
+agg_rt <- aggregate(rt_ms ~ char, data = sclp_trim, FUN = function(x) mean(log(x)))
 names(agg_rt)[2] <- "mean_log_rt"
 
 # accuracy per character from ALL trials (not just keep)

@@ -20,7 +20,7 @@ out <- here::here("outputs","results","metrics.yml")
 lines <- c(
   sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
   'model: lm(mean_log_rt ~ log_freq + strokes)',
-  sprintf('n: %d', n),
+  sprintf('n_obs: %d', n),
   'coefficients:',
   sprintf('  intercept: %.6f', unname(co[1])),
   sprintf('  log_freq: %.6f', unname(co["log_freq"])),

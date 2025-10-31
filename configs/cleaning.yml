@@ -1,0 +1,3 @@
+correct_only: true
+rt_min_ms: 200
+rt_max_ms: 2000

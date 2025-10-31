@@ -116,8 +116,9 @@ By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
 
 # Workflow
 
-- Makefile + three small R scripts (`01_prepare.R`, `02_explore.R`, `03_model.R`)
-- `data/raw`  `data/processed`, `results/metrics.yml`
+- Makefile + three small R scripts (`01_prepare.R`, `02_explore.R`, `03_model.R`) + Quarto report
+- `configs/cleaning.yml` holds the shared trimming parameters
+- Outputs land in `outputs/{data,figures,results,reports}` (diffable YAML/CSV/MD)
 - Explain changes in the PR description
 
 # Example: Lexical Decision in Chinese
