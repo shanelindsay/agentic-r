@@ -34,8 +34,8 @@ This report reads pre-computed outputs from the simple demo pipeline.
 
 ## Cleaning Summary
 
-The pipeline kept 9 of 12 trials (dropped 3). Settings: correct-only =
-TRUE, RT range = 200–2000 ms.
+The pipeline kept NA of 376101 trials (dropped NA). Settings:
+correct-only = TRUE, RT range = 200–2000 ms.
 
 ``` r
 data.frame(
@@ -51,19 +51,19 @@ data.frame(
 )
 ```
 
-             setting value
-    1   correct_only  TRUE
-    2      rt_min_ms   200
-    3      rt_max_ms  2000
-    4   total_trials    12
-    5    kept_trials     9
-    6 dropped_trials     3
+             setting  value
+    1   correct_only   TRUE
+    2      rt_min_ms    200
+    3      rt_max_ms   2000
+    4   total_trials 376101
+    5    kept_trials     NA
+    6 dropped_trials     NA
 
 ## Model Metrics
 
-Model: lm(mean_log_rt ~ log_freq + strokes) (N = 4)
+Model: lm(mean_log_rt ~ log_freq + strokes) (N = 3852)
 
-R² = 0.998.
+R² = 0.434.
 
 Coefficients:
 
@@ -79,9 +79,9 @@ data.frame(
 ```
 
            term  estimate
-    1 intercept  6.832225
-    2  log_freq -0.246769
-    3   strokes  0.034337
+    1 intercept  6.452355
+    2  log_freq -0.070823
+    3   strokes  0.013355
 
 ## RT Histogram (kept trials)
 

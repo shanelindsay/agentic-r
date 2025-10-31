@@ -143,7 +143,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="cleaning-summary" class="level2">
 <h2 class="anchored" data-anchor-id="cleaning-summary">Cleaning Summary</h2>
-<p>The pipeline kept 9 of 12 trials (dropped 3). Settings: correct-only = TRUE, RT range = 200–2000 ms.</p>
+<p>The pipeline kept NA of 376101 trials (dropped NA). Settings: correct-only = TRUE, RT range = 200–2000 ms.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">setting =</span> <span class="fu">c</span>(<span class="st">"correct_only"</span>,<span class="st">"rt_min_ms"</span>,<span class="st">"rt_max_ms"</span>,<span class="st">"total_trials"</span>,<span class="st">"kept_trials"</span>,<span class="st">"dropped_trials"</span>),</span>
@@ -157,20 +157,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>         setting value
-1   correct_only  TRUE
-2      rt_min_ms   200
-3      rt_max_ms  2000
-4   total_trials    12
-5    kept_trials     9
-6 dropped_trials     3</code></pre>
+<pre><code>         setting  value
+1   correct_only   TRUE
+2      rt_min_ms    200
+3      rt_max_ms   2000
+4   total_trials 376101
+5    kept_trials     NA
+6 dropped_trials     NA</code></pre>
 </div>
 </div>
 </section>
 <section id="model-metrics" class="level2">
 <h2 class="anchored" data-anchor-id="model-metrics">Model Metrics</h2>
-<p>Model: lm(mean_log_rt ~ log_freq + strokes) (N = 4)</p>
-<p>R² = 0.998.</p>
+<p>Model: lm(mean_log_rt ~ log_freq + strokes) (N = 3852)</p>
+<p>R² = 0.434.</p>
 <p>Coefficients:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
@@ -183,9 +183,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>       term  estimate
-1 intercept  6.832225
-2  log_freq -0.246769
-3   strokes  0.034337</code></pre>
+1 intercept  6.452355
+2  log_freq -0.070823
+3   strokes  0.013355</code></pre>
 </div>
 </div>
 </section>

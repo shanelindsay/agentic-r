@@ -1,10 +1,13 @@
 .PHONY: all data explore analyse report clean
 all: analyse report
 
-outputs/data/processed.csv: data/raw/sclp_sample.csv data/raw/cld_sample.csv R/01_prepare.R configs/cleaning.yml
+outputs/data/trials_filtered.csv outputs/results/cleaning.yml: R/01_prepare.R configs/cleaning.yml
 	./scripts/run_r.sh R/01_prepare.R
 
-outputs/figures/rt_hist.png outputs/results/cleaning.yml: data/raw/sclp_sample.csv R/02_explore.R configs/cleaning.yml
+outputs/data/processed.csv: outputs/data/trials_filtered.csv R/01_prepare.R configs/cleaning.yml
+	./scripts/run_r.sh R/01_prepare.R
+
+outputs/figures/rt_hist.png: outputs/data/trials_filtered.csv R/02_explore.R
 	./scripts/run_r.sh R/02_explore.R
 
 outputs/results/metrics.yml: outputs/data/processed.csv R/03_model.R
@@ -15,7 +18,7 @@ report: outputs/results/metrics.yml outputs/results/cleaning.yml outputs/figures
 
 data: outputs/data/processed.csv
 
-explore: outputs/figures/rt_hist.png outputs/results/cleaning.yml
+explore: outputs/figures/rt_hist.png
 
 analyse: outputs/results/metrics.yml
 
