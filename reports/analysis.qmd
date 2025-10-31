@@ -33,7 +33,11 @@ This report reads pre-computed outputs from the simple demo pipeline.
 ## Cleaning Summary
 
 ```{r}
-as.data.frame(t(unlist(cleaning)), optional = TRUE)
+if (length(cleaning)) {
+  as.data.frame(t(unlist(cleaning)), optional = TRUE)
+} else {
+  data.frame(message = "No cleaning summary found. Run `make explore`.")
+}
 ```
 
 ## Model Metrics
@@ -51,4 +55,3 @@ if (file.exists(fig_path)) {
   cat("Figure not found: ", fig_path)
 }
 ```
-
