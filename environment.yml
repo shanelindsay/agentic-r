@@ -10,3 +10,4 @@ dependencies:
   - r-jsonlite
   - r-knitr
   - r-rmarkdown
+  - tectonic
