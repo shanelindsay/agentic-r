@@ -61,6 +61,14 @@ This repo now bundles the **scientific-thinking** skill cards from K-Dense AI’
 
 The skill content is licensed under MIT per `skills/scientific-thinking/LICENSE.md`, and each document skill subfolder carries additional notices where provided by the source project.
 
+## Talk slides
+
+Render the concrete deck (PPTX) to `outputs/`:
+
+```bash
+make slides
+```
+
 ## Attribution
 
 * SCLP: Wang et al., 2025. Trial-level data on OSF; paper open access. ([PMC][1])
