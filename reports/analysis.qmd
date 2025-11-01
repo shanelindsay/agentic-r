@@ -17,10 +17,16 @@ execute:
 #| label: setup
 #| message: false
 library(yaml)
+library(readr)
+library(dplyr)
 
 metrics_path <- here::here("outputs","results","metrics.yml")
 cleaning_path <- here::here("outputs","results","cleaning.yml")
 fig_path <- here::here("outputs","figures","rt_hist.png")
+freq_summary_path <- here::here("outputs","data","character_frequency_rt_summary.csv")
+freq_curve_path <- here::here("outputs","data","frequency_rt_curve.csv")
+freq_summary_text_path <- here::here("outputs","results","frequency_rt_summary.md")
+freq_fig_path <- here::here("outputs","figures","frequency_vs_rt.png")
 
 metrics <- yaml::read_yaml(metrics_path)
 cleaning <- yaml::read_yaml(cleaning_path)
@@ -92,4 +98,40 @@ data.frame(
     fmt6(as.numeric(metrics$coefficients$strokes))
   )
 )
+```
+
+## Frequency Effect on Recognition Speed
+
+```{r}
+#| label: frequency-load
+#| message: false
+character_frequency <- readr::read_csv(freq_summary_path, show_col_types = FALSE)
+frequency_curve <- readr::read_csv(freq_curve_path, show_col_types = FALSE)
+```
+
+```{r}
+#| label: frequency-figure
+knitr::include_graphics(freq_fig_path)
+```
+
+```{r}
+#| label: frequency-deciles
+character_frequency |>
+  mutate(decile = ntile(frequency, 10)) |>
+  group_by(decile) |>
+  summarise(
+    freq_range = sprintf(
+      "%s–%s",
+      scales::comma(round(min(frequency), 1)),
+      scales::comma(round(max(frequency), 1))
+    ),
+    mean_rt_ms = round(mean(mean_rt_ms), 1),
+    .groups = "drop"
+  )
+```
+
+```{r}
+#| label: frequency-summary
+#| results: asis
+cat(readr::read_file(freq_summary_text_path))
 ```
