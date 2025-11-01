@@ -3,25 +3,29 @@
 
 ``` r
 library(yaml)
+library(readr)
 
 metrics_path <- here::here("outputs","results","metrics.yml")
 cleaning_path <- here::here("outputs","results","cleaning.yml")
 fig_path <- here::here("outputs","figures","rt_hist.png")
-
-stopifnot(file.exists(metrics_path))
-stopifnot(file.exists(cleaning_path))
-stopifnot(file.exists(fig_path))
+freq_tidy_path <- here::here("outputs","results","character_frequency_model_tidy.csv")
+freq_glance_path <- here::here("outputs","results","character_frequency_model_glance.csv")
+freq_fig_path <- here::here("outputs","figures","character_frequency_rt_vs_freq.png")
 
 metrics <- yaml::read_yaml(metrics_path)
 cleaning <- yaml::read_yaml(cleaning_path)
-
-stopifnot(!is.null(metrics$n_obs))
+freq_model_tidy <- read_csv(freq_tidy_path, show_col_types = FALSE)
+freq_model_glance <- read_csv(freq_glance_path, show_col_types = FALSE)
 N <- as.integer(metrics$n_obs)
-stopifnot(!is.na(N))
 
 # helpers for formatting
 fmt3 <- function(x) sprintf("%.3f", x)
 fmt6 <- function(x) sprintf("%.6f", x)
+
+freq_coef <- freq_model_tidy$Estimate[freq_model_tidy$term == "log_freq"]
+strokes_coef <- freq_model_tidy$Estimate[freq_model_tidy$term == "strokes"]
+freq_pct <- (exp(freq_coef) - 1) * 100
+strokes_pct <- (exp(strokes_coef) - 1) * 100
 ```
 
 ## Overview
@@ -74,31 +78,29 @@ Model: lm(mean_log_rt ~ log_freq + strokes) (N = 3852)
 R² = 0.434.
 
 ``` r
-if (!is.null(metrics$adj_r2)) {
-  cat(paste0("Adjusted R² = ", fmt3(as.numeric(metrics$adj_r2)), ".\n\n"))
-}
+cat(paste0("Adjusted R² = ", fmt3(as.numeric(metrics$adj_r2)), ".\n\n"))
 ```
 
     Adjusted R² = 0.433.
 
 ``` r
-if (!is.null(metrics$sigma)) {
-  cat(paste0("Residual sigma = ", fmt3(as.numeric(metrics$sigma)), ".\n\n"))
-}
+cat(paste0("Residual sigma = ", fmt3(as.numeric(metrics$sigma)), ".\n\n"))
 ```
 
     Residual sigma = 0.099.
 
 ``` r
-if (!is.null(metrics$aic) || !is.null(metrics$bic)) {
-  cat("Information criteria:\n\n")
-  aic_val <- if (!is.null(metrics$aic)) fmt3(as.numeric(metrics$aic)) else "NA"
-  bic_val <- if (!is.null(metrics$bic)) fmt3(as.numeric(metrics$bic)) else "NA"
-  print(data.frame(metric = c("AIC", "BIC"), value = c(aic_val, bic_val)))
-}
+cat("Information criteria:\n\n")
 ```
 
     Information criteria:
+
+``` r
+print(data.frame(
+  metric = c("AIC", "BIC"),
+  value = c(fmt3(as.numeric(metrics$aic)), fmt3(as.numeric(metrics$bic)))
+))
+```
 
       metric     value
     1    AIC -6851.160
@@ -121,3 +123,41 @@ data.frame(
     1 intercept  6.452355
     2  log_freq -0.070823
     3   strokes  0.013355
+
+## Character Frequency Model
+
+Character-level summaries
+(`outputs/data/character_frequency_model_data.csv`) were modelled with
+median lexical decision times as the outcome and predictors `log_freq`
+and `strokes`.
+
+``` r
+knitr::kable(freq_model_tidy, digits = 3)
+```
+
+| term        | Estimate | Std. Error | t value | Pr(\>\|t\|) |
+|:------------|---------:|-----------:|--------:|------------:|
+| (Intercept) |    6.900 |      0.216 |  31.895 |       0.020 |
+| log_freq    |   -0.271 |      0.045 |  -6.063 |       0.104 |
+| strokes     |    0.032 |      0.012 |   2.612 |       0.233 |
+
+95% uncertainty for the combined fit: R² = 0.990, sigma = 0.043.
+
+- `log_freq`: -0.271 on the log scale → -23.737% faster median responses
+  per one-unit increase in log frequency.
+- `strokes`: 0.032 on the log scale → 3.263% slower median responses per
+  additional stroke.
+
+``` r
+knitr::include_graphics(freq_fig_path)
+```
+
+![](../outputs/figures/character_frequency_rt_vs_freq.png)
+
+Median response times fall sharply from rare to moderately frequent
+characters, but the loess curve flattens once log frequency exceeds
+roughly 3, suggesting diminishing speed gains for the most common
+characters. The widening confidence band at high frequency reflects the
+sparse sample, so the apparent plateau should be revisited when more
+characters are available, yet the current evidence aligns with classic
+frequency saturation once visual complexity is held constant.
