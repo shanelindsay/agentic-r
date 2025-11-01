@@ -1,0 +1,222 @@
+---
+title: "Agentic AI for Reproducible Language Science: From Prompt to Pipeline"
+author: "Shane Lindsay"
+institute: "University of Hull"
+format:
+  pptx:
+    reference-doc: ../talk/nord-theme.potx
+execute:
+  eval: false
+---
+
+# Agentic AI for Reproducible Language Science
+Shane Lindsay | s.lindsay@hull.ac.uk | University of Hull
+https://github.com/shanelindsay/agentic-r/
+
+---
+
+# Agenda
+- Why agentic AI matters now
+- What an agent actually is
+- Demo: agents in reproducible research workflows
+- Practical patterns you can adopt
+
+---
+
+# Pre-requisites
+- Comfortable with LLM chatbots (for example, ChatGPT)
+- Working knowledge of R (principles apply to Python and beyond)
+- Curiosity to **探索未至之境** – exploring what is just out of reach
+
+---
+
+# Section Header: Why agents now
+
+---
+
+# Why agents now
+- Current models execute multi-step, tool-rich tasks reliably
+- Compute is affordable for classrooms, labs, and individual researchers
+- No specialised hardware needed; agents are accessible
+- Tangible productivity gains for day-to-day research tasks
+- **Provocation**: by the end of 2025, GUIs become optional
+
+---
+
+# Section Header: What is an agent?
+
+---
+
+# What is an agent?
+- General-purpose LLM embedded in a computer environment
+- Read/write file system access with shell tooling
+- Executes code, documentation, and report generation end-to-end
+- Operates autonomously for focused bursts (typically < 20 minutes)
+- Capable of search, analysis, and summarisation in one loop
+
+---
+
+# Costs in real terms
+- One control: choose fast-and-rough vs slow-and-smart runs
+- Heavy daily use: roughly $200 per month
+- Moderate weekly projects: about $100 per month
+- Light or exploratory use: near $20 per month
+- Free and academic tiers exist for experimentation
+
+---
+
+# Landscape examples
+- OpenAI Codex, Claude Code 4.5, Gemini Code Assist, GitHub Copilot
+- IDE-first agents like Cursor or VS Code Agent mode
+- China-accessible options: Kimi K2, Qwen 3, GLM 4.5, ERNIE derivatives
+- Select tools your institution can support and audit
+
+---
+
+# Section Header: Promise and perils
+
+---
+
+# Promise of agents
+- Accelerate research velocity with automated scaffolding
+- Expand the scope of tasks a small team can attempt
+- Generate reproducible artefacts with minimal manual drudgery
+- Assist with compliance and reporting requirements
+
+---
+
+# Perils to manage
+- Model errors and hallucinations sneak into pipelines
+- Oversight lapses create accountability gaps
+- Skills atrophy if humans stop auditing the work
+- Technical debt grows without intentional workflow design
+
+---
+
+# Using agents effectively
+- Onboard agents like new lab members: provide context and runbooks
+- Invest in structured, documented, runnable projects
+- Favour text-based artefacts that are easy to diff and review
+- Pair agents with human review loops for safety and learning
+
+---
+
+# Section Header: Reproducible research foundations
+
+---
+
+# Why reproducible research
+- Enables independent verification of findings
+- Reduces bias through transparent methods
+- Surfaces errors early via community review
+- Preserves institutional knowledge beyond individual careers
+- Aligns with funder and journal mandates
+
+---
+
+# Reproducibility + agentic AI = allies
+- Workflow lifecycle: plan → execute → review → share → rerun
+- Scripted outputs allow agents to replay steps deterministically
+- Agents excel when artefacts are logged, versioned, and text-based
+- Reproducible pipelines keep human and agent collaborators aligned
+
+---
+
+# Coding patterns agents can navigate
+- Monolithic scripts: quick to start, fragile to change
+- Numbered scripts: clearer flow, maintainable chunks
+- Makefile-driven pipelines: explicit dependencies, deterministic runs
+- Aim: one-button builds from raw data to manuscript tables
+
+---
+
+# Section Header: Infrastructure that helps
+
+---
+
+# Containers and predictability
+- Containerised environments deliver consistent starting states
+- Agents arrive “cold”; containers remove setup drift
+- Documented repos lower onboarding effort for humans and agents
+- If a stranger can run it, an agent can too
+
+---
+
+# GitHub as the collaboration core
+- Version control protects history and encourages review
+- Pull requests make agent actions transparent
+- Automation enforces guardrails without blocking iteration
+- Humans approve; agents accelerate
+
+---
+
+# Case study: `shanelindsay/agentic-r`
+- `AGENTS.md` codifies agent operating procedures
+- `dev/run-in-env.sh` bootstraps the R toolchain reproducibly
+- `environment.yml` pins R version and package set
+- `Makefile` orchestrates scripted analysis steps
+
+---
+
+# Workflow anatomy
+- Two R scripts: `scripts/01_prepare.R`, `scripts/02_model.R`
+- Data directories: `data/raw` and `data/processed`
+- Pipeline outputs consolidated in `results/metrics.yml`
+- Quarto report consumes outputs for publication-ready prose
+
+---
+
+# Section Header: Example pipeline
+
+---
+
+# Example: Lexical decision in Chinese
+- Wang et al. (2025): 8,105 characters and 4,864 pseudocharacters dataset
+- Sun et al. (2018): Chinese Lexical Database as reference lexicon
+- Pipeline baseline: run once to produce `metrics.yml`
+- Lexical decision RT with lexical predictors as core analysis
+
+---
+
+# Agent demo: Builder
+- Prompt: add one predictor and rerun report
+- Agent triggers Makefile via environment wrapper
+- Pipeline reruns deterministically inside container
+- Outputs and diffs committed for human review
+
+---
+
+# End-to-end reporting
+- Manuscript (Quarto) reads values from `results/*`
+- Numbers remain traceable across reruns
+- Updating code refreshes tables and figures automatically
+- Reviewers inspect both code and rendered artefacts
+
+---
+
+# Agent demo: GitHub PR review
+- Second agent reads pull request diffs
+- Drafts review notes and suggested fixes
+- Human reviewer validates and merges or requests changes
+- Establish repeatable quality gates
+
+---
+
+# Agent patterns to copy
+- **Builder**: proposes and implements code changes
+- **Checker**: inspects diffs, outputs, and metrics
+- **Critic** (optional): designs tests or diagnostics
+- Humans integrate context and final judgement
+
+---
+
+# Where to start
+- Pick one pipeline stage (cleaning, modelling, or reporting)
+- Keep tasks small, observable, and automatable
+- Document entry points and environment bootstraps
+- Iterate with agents-in-the-loop to build trust and skill
+
+---
+
+# Thank you
+Questions? Reach me at s.lindsay@hull.ac.uk
