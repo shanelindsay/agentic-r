@@ -17,18 +17,29 @@ execute:
 #| label: setup
 #| message: false
 library(yaml)
+library(readr)
 
 metrics_path <- here::here("outputs","results","metrics.yml")
 cleaning_path <- here::here("outputs","results","cleaning.yml")
 fig_path <- here::here("outputs","figures","rt_hist.png")
+freq_tidy_path <- here::here("outputs","results","character_frequency_model_tidy.csv")
+freq_glance_path <- here::here("outputs","results","character_frequency_model_glance.csv")
+freq_fig_path <- here::here("outputs","figures","character_frequency_rt_vs_freq.png")
 
 metrics <- yaml::read_yaml(metrics_path)
 cleaning <- yaml::read_yaml(cleaning_path)
+freq_model_tidy <- read_csv(freq_tidy_path, show_col_types = FALSE)
+freq_model_glance <- read_csv(freq_glance_path, show_col_types = FALSE)
 N <- as.integer(metrics$n_obs)
 
 # helpers for formatting
 fmt3 <- function(x) sprintf("%.3f", x)
 fmt6 <- function(x) sprintf("%.6f", x)
+
+freq_coef <- freq_model_tidy$Estimate[freq_model_tidy$term == "log_freq"]
+strokes_coef <- freq_model_tidy$Estimate[freq_model_tidy$term == "strokes"]
+freq_pct <- (exp(freq_coef) - 1) * 100
+strokes_pct <- (exp(strokes_coef) - 1) * 100
 ```
 
 ## Overview
@@ -93,3 +104,22 @@ data.frame(
   )
 )
 ```
+
+## Character Frequency Model
+
+Character-level summaries (`outputs/data/character_frequency_model_data.csv`) were modelled with median lexical decision times as the outcome and predictors `log_freq` and `strokes`.
+
+```{r}
+knitr::kable(freq_model_tidy, digits = 3)
+```
+
+95% uncertainty for the combined fit: R² = `r fmt3(freq_model_glance$r_squared)`, sigma = `r fmt3(freq_model_glance$sigma)`.
+
+- `log_freq`: `r fmt3(freq_coef)` on the log scale → `r fmt3(freq_pct)`% faster median responses per one-unit increase in log frequency.
+- `strokes`: `r fmt3(strokes_coef)` on the log scale → `r fmt3(strokes_pct)`% slower median responses per additional stroke.
+
+```{r}
+knitr::include_graphics(freq_fig_path)
+```
+
+Median response times fall sharply from rare to moderately frequent characters, but the loess curve flattens once log frequency exceeds roughly 3, suggesting diminishing speed gains for the most common characters. The widening confidence band at high frequency reflects the sparse sample, so the apparent plateau should be revisited when more characters are available, yet the current evidence aligns with classic frequency saturation once visual complexity is held constant.
