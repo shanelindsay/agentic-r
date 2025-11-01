@@ -158,14 +158,14 @@ Ensure outputs/reports are committed (for the user to review them)
 - Long-running tooling such as tests, Docker Compose, or migrations must use sensible timeouts or run in non-interactive batch mode. Never leave a shell command waiting indefinitely.
 - If a Codex run is too long or stuck on tool calling, apply the same rule. Use non-interactive batch, explicit timeouts, or exit and resume with log inspection.
 
-## 6. Adding a new analysis (manual wiring, no registry)
+## 6. Adding a new analysis 
 
 We keep things explicit and reviewable.
 
 **Contract**
 - One analysis per script under `scripts/` named `NN_slug.R`.
-- Each script reads `outputs/data/processed.csv` using `here::here(...)` and writes a small, diffable YAML to `outputs/results/slug.yml`. Include at least `id`, `title`, and key summary numbers (for example `n_obs`, `r2`, `coefficients`, `timestamp`). Optional `figures` can list file paths under `outputs/figures/`.
-- No changes to Quarto other than adding a new manual section that reads your YAML.
+- Each script reads `outputs/data/processed.csv` using `here::here(...)` and writes a small, diffable YAML to `outputs/results/slug.yml`. Include at least `id`, `title`, and key summary numbers (for example `n_obs`, `sd_rt`,`r2`, `coefficients`, `timestamp`). Optional `figures` can list file paths under `outputs/figures/`.
+- No changes to Quarto other than adding a new manual section that reads your YAML, adds supporting text and optionally figures.
 
 **Steps**
 1. Create `scripts/NN_slug.R` that writes `outputs/results/slug.yml`.
@@ -175,8 +175,6 @@ We keep things explicit and reviewable.
    	$(R_CMD) scripts/NN_slug.R
    ```
 3. In `reports/results.qmd`, copy the baseline section, change the heading and YAML filename, and print the fields you wrote.
-4. Run `make analyse` then `make report`. Commit the script, YAML, and any figures, then open a PR with a one line rationale and a pointer to the YAML diff.
-
-> The existing “Directory contract” already says R/ holds reusable functions only, which matches this refactor.
+4. Run `make analyse` then `make report`. Commit the script, YAML, and any figures, then open a PR.
 
 ---
