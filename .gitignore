@@ -2,9 +2,10 @@
 .Rproj.user/
 .RData
 .DS_Store
-data/processed/
-results/
+/data/processed/
+/results/
 dev/micromamba/
 # keep tiny raw CSVs in version control:
 # !data/raw/sclp_sample.csv
 # !data/raw/cld_sample.csv
+reports/_freeze/
