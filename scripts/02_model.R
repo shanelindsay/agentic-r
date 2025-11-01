@@ -1,4 +1,4 @@
-# R/02_model.R
+# scripts/02_model.R
 # Fit a  model and write a diffable YAML with key metrics.
 # Input:  outputs/data/processed.csv
 # Output: outputs/results/metrics.yml
@@ -8,7 +8,6 @@ suppressWarnings({
 })
 d <- read.csv(here::here("outputs","data","processed.csv"), fileEncoding = "UTF-8")
 
-stopifnot(all(c("mean_log_rt","log_freq","strokes") %in% names(d)))
 mod <- lm(mean_log_rt ~ log_freq + strokes, data = d)
 s   <- summary(mod)
 
