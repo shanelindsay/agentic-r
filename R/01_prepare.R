@@ -82,19 +82,24 @@ cld <- switch(
 )
 
 filtered_trials <- sclp %>%
-  filter(!keep_correct | correct == 1) %>%
-  filter(between(rt_ms, rt_min, rt_max))
+  filter(
+    (!keep_correct | correct == 1) | is.na(correct)
+  ) %>%
+  filter(
+    is.na(rt_ms) | between(rt_ms, rt_min, rt_max)
+  )
 
 filtered_path <- here("outputs", "data", "trials_filtered.csv")
 write_csv(filtered_trials, filtered_path)
 
 agg_rt <- filtered_trials %>%
+  filter(!is.na(rt_ms)) %>%
   group_by(char) %>%
   summarise(mean_log_rt = mean(log(rt_ms)), .groups = "drop")
 
 agg_acc <- sclp %>%
   group_by(char) %>%
-  summarise(acc_rate = mean(correct, na.rm = TRUE), .groups = "drop")
+  summarise(acc_rate = mean(correct), .groups = "drop")
 
 dat <- agg_rt %>%
   left_join(agg_acc, by = "char") %>%
@@ -123,6 +128,7 @@ summary_info <- list(
 write_yaml(summary_info, summary_yaml)
 
 hist_plot <- filtered_trials %>%
+  filter(!is.na(rt_ms)) %>%
   ggplot(aes(x = rt_ms)) +
   geom_histogram(bins = 40, fill = "#4477AA") +
   labs(
