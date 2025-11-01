@@ -23,7 +23,7 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 
 ### 1.2 Non-negotiables
 
-1. Do not add new compute into QMDs. If a report needs data that does not exist, add a target and a function.
+1. Do not add new compute into QMDs. If a report needs data that does not exist, add a script step and a function.
 2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
 3. Prefer plain-text, diffable artefacts (CSV, MD, YAML) in `outputs/`.
 4. Use `here::here()` for all paths. No relative `../` or `getwd()` assumptions.
@@ -42,7 +42,7 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 ## 3. Environment wrapper (mandatory)
 
 - Always execute R and Quarto via `./dev/run-in-env.sh`.
-- Shared environment families: `r-core` (analysis, targets, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
+- Shared environment families: `r-core` (analysis, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
 - Use per-project R packages via `R_LIBS_USER=$PWD/.rlib`.
 
 ### 3.1 Quick start
@@ -107,7 +107,7 @@ Prefer text-based, diffable artefacts and keep compute in the pipeline.
 ### 5.1 WRI cycle
 
 1. **Write**: Report code in `reports/*.qmd`.
-2. **Run**: build with `{targets}` and render QMD to `outputs/reports/...`.
+2. **Run**: build with `make` and render QMD to `outputs/reports/...`.
 3. **Inspect**: review rendered MD or HTML in `outputs/...`.
 4. **Iterate**: refine; commit both code and updated `outputs/`.
 
@@ -118,7 +118,7 @@ Prefer text-based, diffable artefacts and keep compute in the pipeline.
 - Readers care about the finished result. Avoid historical comments unless they aid understanding.
 - Do not create ad hoc `v2` files. Use Git for versioning.
 - Use Makefiles where helpful to automate the pipeline.
-- QMDs are views and logs. Heavy compute belongs in targets and `R/`.
+- QMDs are views and logs. Heavy compute belongs in scripts and `R/`.
 - Do not mix computation and interpretation. Interpretive prose is based on QMD outputs. Inline numbers when helpful.
 - YAML side outputs generated mid-pipeline may be read by `manuscript.qmd`. Prefer YAML over `.rds` for diffability.
 - Heavy R objects, for example Bayesian mixed models, can be saved as `.rds`.
