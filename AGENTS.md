@@ -1,31 +1,31 @@
-
-
-```md
 # Agents Guide
 
 This document defines how agents work in this repo. It is **policy**: follow it unless a task explicitly says otherwise. Goals: clarity, reproducibility, auditable steps.
+
+Use APA style 7th edition when writing outputs (i.e. reports, qmd)
 
 ---
 
 ## 1. Context
 
-- User:
-- Work:
 - Priorities: reproducibility, clarity, well-documented workflows.
 - Default approach: prefer simple, auditable steps over clever automation.
+
+
+You may be asked to run new analyses. If, the surface for output is in the analysis.qmd - figures, number and narrative APA prose should ultimately be outputed in the analysis.qmd reports that are rendered. 
 
 ### 1.1 Directory contract
 
 - `R/` → reusable functions only; no side effects on import; no top-level I/O.
 - `scripts/` → orchestration, CLI entry points, diagnostics helpers (small, no heavy compute).
 - `reports/` → Quarto views that **read** pipeline outputs (QC, diagnostics, inference stubs).
-- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports).
+- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports) - ensure these are commited (for review)
 
 ### 1.2 Non-negotiables
 
-1. Do not add new compute into QMDs. If a report needs data that does not exist, add a script step and a function.
+1. Do not add new compute into QMDs. If a report needs data that does not exist, write it earier in the pipeline.
 2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
-3. Prefer plain-text, diffable artefacts (CSV, MD, YAML) in `outputs/`.
+3. Prefer plain-text, diffable artefacts (CSV, MD, YAML) in `outputs/`. Exceptions are heavy outputs (e.g. slow-fitting models, use .rds)
 4. Use `here::here()` for all paths. No relative `../` or `getwd()` assumptions.
 
 ---
@@ -35,6 +35,7 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 - Cloud: expect containerised tools and fixed resources. Long jobs may time out.
 - Laptop: respect limited resources and mixed OS quirks (Windows or Linux).
 - Parallel agents may run locally and in the cloud. Sync often and separate concerns.
+
 - Prefer tidyverse coding in general.
 
 ---
@@ -42,7 +43,7 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 ## 3. Environment wrapper (mandatory)
 
 - Always execute R and Quarto via `./dev/run-in-env.sh`.
-- Shared environment families: `r-core` (analysis, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
+- Shared environment families: `r-core` (analysis, targets, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
 - Use per-project R packages via `R_LIBS_USER=$PWD/.rlib`.
 
 ### 3.1 Quick start
@@ -107,23 +108,25 @@ Prefer text-based, diffable artefacts and keep compute in the pipeline.
 ### 5.1 WRI cycle
 
 1. **Write**: Report code in `reports/*.qmd`.
-2. **Run**: build with `make` and render QMD to `outputs/reports/...`.
+2. **Run**:  QMD to `outputs/reports/...`.
 3. **Inspect**: review rendered MD or HTML in `outputs/...`.
 4. **Iterate**: refine; commit both code and updated `outputs/`.
 
+Ensure outputs/reports are commited (for the user to review them)
+
 ### 5.2 Principles for documents and code
 
-- Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in publication-ready format via apaquarto and consumes figures and tables generated earlier.
+- Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in publication-style format and consumes figures and tables generated earlier.
 - The data processing and analysis pipeline should be simple, reproducible, and shareable on OSF.
 - Readers care about the finished result. Avoid historical comments unless they aid understanding.
 - Do not create ad hoc `v2` files. Use Git for versioning.
 - Use Makefiles where helpful to automate the pipeline.
-- QMDs are views and logs. Heavy compute belongs in scripts and `R/`.
+- QMDs are views and logs. Heavy compute belongs in `R/`.
 - Do not mix computation and interpretation. Interpretive prose is based on QMD outputs. Inline numbers when helpful.
 - YAML side outputs generated mid-pipeline may be read by `manuscript.qmd`. Prefer YAML over `.rds` for diffability.
 - Heavy R objects, for example Bayesian mixed models, can be saved as `.rds`.
 - Exploratory reports sit outside the core reproducible pipeline.
-- Quarto defaults: `freeze: true`, `echo: true`. See the freeze policy.
+- Quarto defaults: `freeze: auto`, `echo: true`. 
 
 ### 5.3 Path management
 
@@ -132,16 +135,8 @@ Prefer text-based, diffable artefacts and keep compute in the pipeline.
 ### 5.4 Tests
 
 - QMDs must render.
-- Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown.
+- Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown to ensure any changes you made worked
 - Add other tests as necessary.
-
-### 5.5 Quarto freeze policy
-
-Quarto writes cached renders into `_freeze/` directories adjacent to each QMD, for example `outputs/reports/exp1/_freeze/06_exp1_report/`. These directories are ignored by Git but must remain in place for deterministic rebuilds.
-
-- Production or stable runs: prefer `freeze: true` for exact outputs and deterministic rebuilds.
-- Local development: use the `local` profile (`configs/profiles/local.yaml`) with `reports: { freeze: auto }` to re-render only changed chunks.
-- Before tagging outputs, restore `freeze: true` or remove the local profile and confirm the corresponding `_freeze/` directories are populated.
 
 ### 5.6 Core implementation principles
 
