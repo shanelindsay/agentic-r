@@ -1,5 +1,5 @@
 
-.PHONY: all data analyse report clean
+.PHONY: all data analyse report clean slides talk
 
 # Prefer the env wrapper, fall back gracefully if it is not available
 RUNNER  ?= ./dev/run-in-env.sh
@@ -31,3 +31,12 @@ analyse: outputs/results/metrics.yml
 
 clean:
 	rm -rf outputs/data outputs/results outputs/figures outputs/reports
+
+# ---- Slides (Quarto) ----
+slides: outputs/deliverables/agentic-ai-concrete/agentic-ai-concrete.pptx
+talk: slides
+
+outputs/deliverables/agentic-ai-concrete/agentic-ai-concrete.pptx: slides/agentic-ai-concrete.qmd talk/nord-theme.potx dev/run-in-env.sh
+	$(Q_CMD) render slides/agentic-ai-concrete.qmd
+	mkdir -p outputs/deliverables/agentic-ai-concrete
+	mv -f slides/agentic-ai-concrete.pptx outputs/deliverables/agentic-ai-concrete/
