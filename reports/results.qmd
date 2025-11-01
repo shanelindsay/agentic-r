@@ -1,13 +1,16 @@
 ---
-title: "Results"
+title: "Agentic AI Report"
 format:
-  html: { toc: true }
-  pdf: { toc: true, pdf-engine: tectonic }
+  html:
+    toc: false
+  pdf:
+    toc: true
+    pdf-engine: tectonic
   docx: default
   gfm: default
-freeze: true
+freeze: auto
 execute:
-  echo: true
+  echo: false
 ---
 
 ```{r}
