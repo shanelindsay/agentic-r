@@ -12,14 +12,14 @@ Use APA style 7th edition when writing outputs (i.e. reports, qmd)
 - Default approach: prefer simple, auditable steps over clever automation.
 
 
-You may be asked to run new analyses. If, the surface for output is in the results.qmd - figures, number and narrative APA prose should ultimately be outputed in the results.qmd reports that are rendered. 
+You may be asked to run new analyses. The surface for output lives in `reports/results.qmd`; figures, numbers, and narrative APA prose should ultimately be output in that rendered document. 
 
 ### 1.1 Directory contract
 
 - `R/` → reusable functions only; no side effects on import; no top-level I/O.
 - `scripts/` → orchestration, CLI entry points, diagnostics helpers (small, no heavy compute).
 - `reports/` → Quarto views that **read** pipeline outputs (QC, diagnostics, inference stubs).
-- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports) - ensure these are commited (for review)
+- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports) - ensure these are committed (for review)
 
 ### 1.2 Non-negotiables
 
@@ -58,7 +58,11 @@ You may be asked to run new analyses. If, the surface for output is in the resul
 
 # Start an interactive R session
 ./dev/run-in-env.sh R
+
+# Fast HTML iteration with the local Quarto profile
+QUARTO_PROFILE=local make report
 ```
+The profile configuration lives at `reports/_quarto-profile-local.yaml`.
 
 ---
 
@@ -112,7 +116,7 @@ Prefer text-based, diffable artefacts and keep compute in the pipeline.
 3. **Inspect**: review rendered HTML or MD in `outputs/...`.
 4. **Iterate**: refine; commit both code and updated `outputs/`.
 
-Ensure outputs/reports are commited (for the user to review them)
+Ensure outputs/reports are committed (for the user to review them)
 
 ### 5.2 Principles for documents and code
 

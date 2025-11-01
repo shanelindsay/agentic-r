@@ -10,7 +10,7 @@ ifeq (,$(wildcard $(RUNNER)))
 R_CMD := $(RSCRIPT)
 Q_CMD := $(QUARTO)
 else
-R_CMD := $(RUNNER) Rscript
+R_CMD := $(RUNNER) Rscript --vanilla
 Q_CMD := $(RUNNER) $(QUARTO)
 endif
 

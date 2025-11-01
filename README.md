@@ -32,6 +32,13 @@ The Makefile calls `./dev/run-in-env.sh` automatically when available. You can a
 ./dev/run-in-env.sh quarto render reports/results.qmd --output-dir outputs/reports
 ```
 
+To iterate quickly with lighter HTML defaults, enable the Quarto `local` profile:
+```bash
+QUARTO_PROFILE=local make report
+# or: ./dev/run-in-env.sh quarto render reports/results.qmd --profile local --output-dir outputs/reports
+```
+The profile configuration lives at `reports/_quarto-profile-local.yaml`.
+
 ## Data
 
 See licences and fetch locations in `docs/data-sources.md`.

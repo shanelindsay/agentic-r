@@ -1739,7 +1739,7 @@ Prefer text-based, diffable artefacts and keep compute in the pipeline.
 Quarto writes cached renders into `_freeze/` directories adjacent to each QMD, for example `outputs/reports/exp1/_freeze/06_exp1_report/`. These directories are ignored by Git but must remain in place for deterministic rebuilds.
 
 - Production or stable runs: prefer `freeze: true` for exact outputs and deterministic rebuilds.
-- Local development: use the `local` profile (`configs/profiles/local.yaml`) with `reports: { freeze: auto }` to re-render only changed chunks.
+- Local development: use the `local` profile (`reports/_quarto-profile-local.yaml`) with `reports: { freeze: auto }` to re-render only changed chunks.
 - Before tagging outputs, restore `freeze: true` or remove the local profile and confirm the corresponding `_freeze/` directories are populated.
 
 ### 5.6 Core implementation principles

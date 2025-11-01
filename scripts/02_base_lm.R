@@ -20,21 +20,23 @@ mod <- lm(mean_log_rt ~ log_freq + strokes, data = d)
 s <- summary(mod)
 co <- coef(mod)
 
+round6 <- function(x) as.numeric(sprintf("%.6f", x))
+
 res <- list(
   id = "base_lm",
   title = "Baseline linear model: log frequency + strokes",
   model = "lm(mean_log_rt ~ log_freq + strokes)",
   n_obs = nrow(d),
   coefficients = list(
-    intercept = unname(co[1]),
-    log_freq = unname(co["log_freq"]),
-    strokes = unname(co["strokes"])
+    intercept = round6(unname(co[1])),
+    log_freq = round6(unname(co["log_freq"])),
+    strokes = round6(unname(co["strokes"]))
   ),
-  r2 = unname(s$r.squared),
-  adj_r2 = unname(s$adj.r.squared),
-  sigma = unname(s$sigma),
-  aic = AIC(mod),
-  bic = BIC(mod),
+  r2 = round6(unname(s$r.squared)),
+  adj_r2 = round6(unname(s$adj.r.squared)),
+  sigma = round6(unname(s$sigma)),
+  aic = round6(AIC(mod)),
+  bic = round6(BIC(mod)),
   timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")
 )
 
