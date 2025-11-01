@@ -1,4 +1,4 @@
-# R/01_prepare.R
+# scripts/01_prepare.R
 # Read trial-level SCLP slice + CLD predictors; aggregate and join.
 # Input:  data/raw/sclp_sample.csv (columns: char, rt_ms, correct)
 #         data/raw/cld_sample.csv  (columns: char, log_freq, strokes)
@@ -14,7 +14,6 @@ suppressPackageStartupMessages({
   library(yaml)
   library(fs)
   library(here)
-  library(rlang)
 })
 
 walk(
@@ -23,35 +22,14 @@ walk(
 )
 
 cfg_path <- here("configs", "cleaning.yml")
-if (!file_exists(cfg_path)) {
-  abort(glue("Cleaning config not found at {cfg_path}"))
-}
-
 cfg <- read_yaml(cfg_path)
-
-required_fields <- c(
-  "correct_only", "rt_min_ms", "rt_max_ms",
-  "raw_trials", "raw_type", "cld_file", "cld_type"
-)
-missing_fields <- setdiff(required_fields, names(cfg))
-if (length(missing_fields) > 0) {
-  abort(glue("Missing expected config fields: {toString(missing_fields)}"))
-}
 
 keep_correct <- isTRUE(cfg$correct_only)
 rt_min <- as.numeric(cfg$rt_min_ms)
 rt_max <- as.numeric(cfg$rt_max_ms)
 
-if (!is.finite(rt_min) || !is.finite(rt_max) || rt_min >= rt_max) {
-  abort("rt_min_ms and rt_max_ms must be finite and rt_min_ms < rt_max_ms.")
-}
-
 raw_trials_path <- here(cfg$raw_trials)
 cld_path <- here(cfg$cld_file)
-
-if (!file_exists(raw_trials_path) || !file_exists(cld_path)) {
-  abort("Configured input files were not found. Check cleaning.yml paths.")
-}
 
 sclp <- switch(
   cfg$raw_type,
@@ -62,8 +40,7 @@ sclp <- switch(
       correct = accuracy
     ),
   sample = read_csv(raw_trials_path, show_col_types = FALSE) %>%
-    select(char, rt_ms, correct),
-  abort(glue("Unsupported raw_type '{cfg$raw_type}' in cleaning config."))
+    select(char, rt_ms, correct)
 ) %>%
   mutate(correct = as.numeric(correct))
 
@@ -77,8 +54,7 @@ cld <- switch(
       log_freq = log10(Frequency + 1)
     ),
   sample = read_csv(cld_path, show_col_types = FALSE) %>%
-    select(char, log_freq, strokes),
-  abort(glue("Unsupported cld_type '{cfg$cld_type}' in cleaning config."))
+    select(char, log_freq, strokes)
 )
 
 filtered_trials <- sclp %>%
