@@ -24,7 +24,7 @@ walk(
 
 cfg_path <- here("configs", "cleaning.yml")
 if (!file_exists(cfg_path)) {
-  rlang::abort(glue("Cleaning config not found at {cfg_path}"))
+  abort(glue("Cleaning config not found at {cfg_path}"))
 }
 
 cfg <- read_yaml(cfg_path)
@@ -35,7 +35,7 @@ required_fields <- c(
 )
 missing_fields <- setdiff(required_fields, names(cfg))
 if (length(missing_fields) > 0) {
-  rlang::abort(glue("Missing expected config fields: {toString(missing_fields)}"))
+  abort(glue("Missing expected config fields: {toString(missing_fields)}"))
 }
 
 keep_correct <- isTRUE(cfg$correct_only)
@@ -43,14 +43,14 @@ rt_min <- as.numeric(cfg$rt_min_ms)
 rt_max <- as.numeric(cfg$rt_max_ms)
 
 if (!is.finite(rt_min) || !is.finite(rt_max) || rt_min >= rt_max) {
-  rlang::abort("rt_min_ms and rt_max_ms must be finite and rt_min_ms < rt_max_ms.")
+  abort("rt_min_ms and rt_max_ms must be finite and rt_min_ms < rt_max_ms.")
 }
 
 raw_trials_path <- here(cfg$raw_trials)
 cld_path <- here(cfg$cld_file)
 
 if (!file_exists(raw_trials_path) || !file_exists(cld_path)) {
-  rlang::abort("Configured input files were not found. Check cleaning.yml paths.")
+  abort("Configured input files were not found. Check cleaning.yml paths.")
 }
 
 sclp <- switch(
@@ -63,7 +63,7 @@ sclp <- switch(
     ),
   sample = read_csv(raw_trials_path, show_col_types = FALSE) %>%
     select(char, rt_ms, correct),
-  rlang::abort(glue("Unsupported raw_type '{cfg$raw_type}' in cleaning config."))
+  abort(glue("Unsupported raw_type '{cfg$raw_type}' in cleaning config."))
 ) %>%
   mutate(correct = as.numeric(correct))
 
@@ -78,7 +78,7 @@ cld <- switch(
     ),
   sample = read_csv(cld_path, show_col_types = FALSE) %>%
     select(char, log_freq, strokes),
-  rlang::abort(glue("Unsupported cld_type '{cfg$cld_type}' in cleaning config."))
+  abort(glue("Unsupported cld_type '{cfg$cld_type}' in cleaning config."))
 )
 
 filtered_trials <- sclp %>%
