@@ -12,7 +12,7 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 **Directory contract**
 
 - `R/` -> reusable functions only; no side effects on import; no top-level I/O.
-- `scripts/` -> orchestration, CLI entrypoints, Slurm wrappers, diagnostics helpers (tiny, no heavy compute).
+- `scripts/` -> orchestration, CLI entrypoints,  diagnostics helpers (tiny, no heavy compute).
 - `reports/` -> Quarto "views" that **read** pipeline outputs (QC, diagnostics, inference stubs).
 - `outputs/` -> all rendered artefacts (figures, tables, md/html from reports).
 
@@ -20,7 +20,7 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 1. Do not add new compute into QMDs. If a report needs data that doesn't exist, add a target + function.
 2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
 3. Prefer plain-text, diffable artefacts (CSV/MD/YAML) in `outputs/`.
-4. Use `here::here()` for all paths; no relative "../" or `getwd()` assumptions.
+4. Use `here::here()` for all paths; no relative "../" or `getwd()` assumption
 
 ### 2.1 General rules
 
@@ -28,6 +28,7 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 * Laptop: respect limited resources and mixed OS quirks (Windows or Linux).
 * HPC: use batch schedulers, handle larger data and high memory workloads.
 * Parallel agents may be running locally and in the cloud. Sync often and separate concerns.
+* Prefer tidyverse coding in general
 
 ### 2.2 Environment wrapper (mandatory)
 
