@@ -4,12 +4,17 @@
 suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
+  library(purrr)
   library(tidyr)
   library(ggplot2)
   library(glue)
   library(yaml)
+  library(fs)
   library(here)
+  library(tools)
 })
+
+source(here::here("R", "utils.R"))
 
 dir.create(here("outputs","data"),    showWarnings = FALSE, recursive = TRUE)
 dir.create(here("outputs","results"), showWarnings = FALSE, recursive = TRUE)
@@ -58,7 +63,8 @@ if (keep_correct) {
   filtered_trials <- filtered_trials |> filter(correct == 1)
 }
 
-readr::write_csv(filtered_trials, here("outputs","data","trials_filtered.csv"))
+filtered_path <- here("outputs", "data", "trials_filtered.csv")
+write_csv_atomic(filtered_trials, filtered_path)
 
 agg_rt <- filtered_trials |>
   group_by(char) |>
@@ -73,14 +79,17 @@ dat <- agg_rt |>
   inner_join(cld, by = "char") |>
   drop_na(log_freq, strokes)
 
-readr::write_csv(dat, here("outputs","data","processed.csv"))
+processed_path <- here("outputs", "data", "processed.csv")
+write_csv_atomic(dat, processed_path)
 
-yaml::write_yaml(list(
+summary_yaml <- here("outputs", "results", "cleaning.yml")
+summary_info <- list(
   timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
   trimming  = list(correct_only = keep_correct, rt_min_ms = rt_min, rt_max_ms = rt_max),
   counts    = list(total_trials = nrow(sclp), kept_trials = nrow(filtered_trials),
                    dropped_trials = nrow(sclp) - nrow(filtered_trials))
-), here("outputs","results","cleaning.yml"))
+)
+write_yaml_atomic(summary_info, summary_yaml)
 
 hist_plot <- ggplot(filtered_trials, aes(x = rt_ms)) +
   geom_histogram(bins = 40, fill = "#4477AA") +

@@ -12,7 +12,7 @@ Use APA style 7th edition when writing outputs (i.e. reports, qmd)
 - Default approach: prefer simple, auditable steps over clever automation.
 
 
-You may be asked to run new analyses. If, the surface for output is in the analysis.qmd - figures, number and narrative APA prose should ultimately be outputed in the analysis.qmd reports that are rendered. 
+You may be asked to run new analyses. If, the surface for output is in the results.qmd - figures, number and narrative APA prose should ultimately be outputed in the results.qmd reports that are rendered. 
 
 ### 1.1 Directory contract
 
@@ -51,10 +51,10 @@ You may be asked to run new analyses. If, the surface for output is in the analy
 ```bash
 # Run R scripts deterministically
 ./dev/run-in-env.sh Rscript scripts/01_prepare.R
-./dev/run-in-env.sh Rscript scripts/02_model.R
+./dev/run-in-env.sh Rscript scripts/02_base_lm.R
 
 # Render a Quarto document
-./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
+./dev/run-in-env.sh quarto render reports/results.qmd --output-dir outputs/reports
 
 # Start an interactive R session
 ./dev/run-in-env.sh R
@@ -107,9 +107,9 @@ Prefer text-based, diffable artefacts and keep compute in the pipeline.
 
 ### 5.1 WRI cycle
 
-1. **Write**: Report code in `reports/*.qmd`.
-2. **Run**:  QMD to `outputs/reports/...`.
-3. **Inspect**: review rendered MD or HTML in `outputs/...`.
+1. **Write**: report code in `reports/*.qmd`.
+2. **Run**: `make analyse` then `make report` to render QMD to `outputs/reports/...`.
+3. **Inspect**: review rendered HTML or MD in `outputs/...`.
 4. **Iterate**: refine; commit both code and updated `outputs/`.
 
 Ensure outputs/reports are commited (for the user to review them)
@@ -153,5 +153,26 @@ Ensure outputs/reports are commited (for the user to review them)
 
 - Long-running tooling such as tests, Docker Compose, or migrations must use sensible timeouts or run in non-interactive batch mode. Never leave a shell command waiting indefinitely.
 - If a Codex run is too long or stuck on tool calling, apply the same rule. Use non-interactive batch, explicit timeouts, or exit and resume with log inspection.
+
+## 6. Adding a new analysis (manual wiring, no registry)
+
+We keep things explicit and reviewable.
+
+**Contract**
+- One analysis per script under `scripts/` named `NN_slug.R`.
+- Each script reads `outputs/data/processed.csv` using `here::here(...)` and writes a small, diffable YAML to `outputs/results/slug.yml`. Include at least `id`, `title`, and key summary numbers (for example `n_obs`, `r2`, `coefficients`, `timestamp`). Optional `figures` can list file paths under `outputs/figures/`.
+- No changes to Quarto other than adding a new manual section that reads your YAML.
+
+**Steps**
+1. Create `scripts/NN_slug.R` that writes `outputs/results/slug.yml`.
+2. In the **Makefile**, append `outputs/results/slug.yml` to `ANALYSES` and add a rule:
+   ```
+   outputs/results/slug.yml: outputs/data/processed.csv scripts/NN_slug.R
+   	$(R_CMD) scripts/NN_slug.R
+   ```
+3. In `reports/results.qmd`, copy the baseline section, change the heading and YAML filename, and print the fields you wrote.
+4. Run `make analyse` then `make report`. Commit the script, YAML, and any figures, then open a PR with a one line rationale and a pointer to the YAML diff.
+
+> The existing “Directory contract” already says R/ holds reusable functions only, which matches this refactor.
 
 ---
