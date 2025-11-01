@@ -1,0 +1,166 @@
+:root {
+  --bg: #fcfcfc;
+  --primary: #b165fb;
+  --secondary: #40695b;
+  --text: #182d3c;
+  --muted: #4a5a68;
+}
+
+body {
+  margin: 0;
+  padding: 56px 72px 64px;
+  width: 960px;
+  height: 540px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 18px;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-weight: bold;
+  color: var(--primary);
+}
+
+h1 {
+  font-size: 44px;
+}
+
+h2 {
+  font-size: 34px;
+}
+
+h3 {
+  font-size: 26px;
+  color: var(--secondary);
+}
+
+p {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+ul {
+  margin: 0;
+  padding-left: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+li {
+  margin: 0;
+}
+
+.emphasis {
+  color: var(--secondary);
+}
+
+.callout {
+  background-color: #e9f5f0;
+  border-left: 6px solid var(--secondary);
+  padding: 18px 20px;
+  border-radius: 14px;
+}
+
+.callout p {
+  font-size: 24px;
+  color: var(--secondary);
+  font-weight: bold;
+}
+
+footer p {
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.two-col {
+  display: flex;
+  gap: 36px;
+  margin-top: 8px;
+}
+
+.column {
+  flex: 1;
+  background-color: #f2ebfd;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.column h3 {
+  color: var(--secondary);
+  font-size: 24px;
+}
+
+.column ul {
+  gap: 8px;
+  font-size: 21px;
+}
+
+.tagline {
+  font-size: 20px;
+  color: var(--muted);
+}
+
+.metric-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metric-list li {
+  list-style-type: none;
+  background-color: #f2ebfd;
+  border-radius: 14px;
+  padding: 14px 18px;
+  border-left: 6px solid var(--primary);
+}
+
+.metric-list li p {
+  font-size: 20px;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.section-label {
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+
+.summary {
+  background-color: #fbefff;
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.summary ul {
+  gap: 12px;
+}
+
+.summary p {
+  font-size: 22px;
+}
+
+.small {
+  font-size: 18px;
+}

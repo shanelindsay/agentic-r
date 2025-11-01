@@ -9,3 +9,4 @@ dev/micromamba/
 # !data/raw/sclp_sample.csv
 # !data/raw/cld_sample.csv
 reports/_freeze/
+slides-new/node_modules/
