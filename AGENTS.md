@@ -103,79 +103,6 @@ We may have multiple agents working in parallel, and users working on different 
 * Use Pull Requests for review. You can ask for reviews on commits.
 * Reference the driving issue in the PR description. Include a closing keyword, for example `Closes #123`.
 
-## 4) Issue-Driven Project Management
-
-Single source of truth: GitHub Issues drive all work. PRs link back to their issue. Discussion stays in the issue.
-
-### 4.1 Issue hygiene and planning
-
-* Use the documented labels and naming conventions.
-* Group related work under epics. Use parent plus child issue links.
-* When starting work, assign yourself and add a short plan.
-* Post progress updates directly to the relevant issue so parallel agents and collaborators stay aligned.
-* For out-of-scope work, suggest additional issues.
-* Keep implementation details in the PR. Keep the issue high level.
-* Every PR body must include `Closes #<issue-number>` when working from an issue where appropriate.
-
-**CLI helpers**
-
-* Sub-issues: `gh sub-issue create --parent 123 --title "Implement user authentication"`.
-
-### 4.2 Labels and fields
-
-Use orthogonal labels.
-
-* Type: `type:pm`, `type:docs`, `type:workflow`, `type:analysis`, `type:infra`, `type:writing`, `type:decision`.
-* Agentability: `role:agent`, `role:agent+qc` which means agent executes and human checks, `role:human`.
-* Run context: `run:flexible` which means local or cloud is fine, HPC possible, `run:hpc-only`.
-* Size: `size:xs`, `size:s`, `size:m`, `size:l`, `size:xl` which is an epic.
-* Priority: `priority:P0`, `priority:P1`, `priority:P2` (optional).
-* Status: `status:blocked`, `status:ready`, `status:in-progress`, `status:review-needed`, `status:done`.
-
-**Size calibration**
-
-* XS which is a one touch change: trivial tweak in a single file, no design. No new branch or worktree is needed.
-* S which is a straightforward change: a few files, clear acceptance criteria, no cross domain coordination. Suitable for a single agent end to end.
-* M which is a more complex and lengthy change: multiple files, long running tasks, human quality checks recommended.
-* L which is a co-ordinated change: cross domain work where sequencing matters. Usually split into 2 to 5 S or M children. The parent tracks coordination only.
-* XL which is an epic umbrella: never implement directly. Tracks a theme or outcome across many issues.
-
-Keep a single issue with a checklist when items are small verifications under one assignee and one PR.
-
-Split into sub-issues when any are true:
-
-* Multiple assignees or handoffs which means agent to human quality checks.
-* Independent scheduling where some parts can land earlier.
-
-### 4.3 Working on issues and PRs
-
-* When starting, mark `status:in-progress` on the issue. Update as needed.
-* Regularly update the issue with comments as progress is made.
-* Draft PRs are recommended.
-
-## 5) Repository Map
-
-* `data/` -- raw and processed experimental data
-  * `raw/` -- raw data
-  * `processed/` -- cleaned, analysis-ready datasets
-* `scripts/` -- orchestration + CLI (no heavy compute). Includes:
-  * `run_targets_*.R` launchers, `tools/`, `tests/`, and Slurm wrappers under `slurm/`.
-* `reports/` -- Quarto "views" that consume outputs (`qc_group.qmd`, `qc_subject.qmd`, `input_qc.qmd`, `inference/m4_cluster_inference.qmd`).
-* `archive/legacy-qmd/` -- archived numbered QMDs (`0x_*`). Kept for historical reference only.
-* `outputs/` -- all rendered artefacts from pipeline and reports (figures, tables, reports markdown/html).
-* `docs/` -- project documentation and reference materials.
-* `manuscript/` -- publication documents. No heavy computation. Consumes prepared outputs.
-  * `submission/` -- frozen outputs for journal handoff.
-* `deliverables/` -- external-facing materials such as talks, conferences, media.
-* `dev/` -- development guides, documentation, and environment tools.
-
-## 6) Turn-Based Execution for Agents
-
-* Hard limit: actions only occur during the agent's active turn. Between turns, the agent cannot poll Slurm, tail logs, read notifications, or schedule timers.
-* No background promises: do not claim ongoing monitoring. Use conditional phrasing for future work, for example "On your reply, I can ...".
-* Do not ask Shane to run commands or submit jobs. The agent runs commands and submits jobs.
-* After any submission or long run, state where outputs or logs will appear, for example `outputs/logs/<job>-<JOBID>.{out,err}`. Suggest sensible next step options for the next turn, such as a status check, a short log tail and summary, or a targeted validation. If the next step is clear, continue with the task.
-
 ## 7) Development Workflow
 
 Because agents are involved, prefer text-based, diffable artefacts--**and keep compute in the pipeline**.
@@ -236,21 +163,3 @@ Quarto writes cached renders into `_freeze/` directories adjacent to each QMD (e
 
 * Long running tooling such as tests, docker compose, or migrations must always be invoked with sensible timeouts or in non interactive batch mode. Never leave a shell command waiting indefinitely. Prefer explicit timeouts, scripted runs, or log polling after the command exits.
 * If a Codex run is too long or stuck on tool calling, apply the same rule. Use non interactive batch, explicit timeouts, or exit and resume with log inspection.
-
-### 7.9 Definition of Done (checklists)
-
-**Pipeline change (R/ + targets)**
- - [ ] New/changed targets documented in `_targets.R` comments.
- - [ ] Determinism: seeds/plans set; no silent randomness.
- - [ ] Outputs land under `outputs/{data,results,figures,tables}`.
- - [ ] `README`/docs updated where paths or user steps changed.
-
-**Report change (reports/*.qmd)**
- - [ ] Reads from outputs only; no heavy compute.
- - [ ] `freeze` set appropriately; renders to `outputs/reports/...`.
- - [ ] Example render command added to `reports/README.md`.
-
-## 8) Finalising
-
-* Merge the PR to close the linked issue automatically when possible.
-* After merge, confirm the repository is clean and documentation is up to date.t
