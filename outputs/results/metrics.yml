@@ -1,4 +1,4 @@
-timestamp: "2025-11-01T10:19:35+0000"
+timestamp: "2025-11-01T10:32:56+0000"
 model: lm(mean_log_rt ~ log_freq + strokes)
 n_obs: 3852
 coefficients:

@@ -1,33 +1,25 @@
 ## scripts/02_model.R
-## Fit a small model and write a diffable YAML with key metrics.
-## Input:  outputs/data/processed.csv
-## Output: outputs/results/metrics.yml
+## Minimal model step: fail loudly if inputs are wrong.
 
 suppressPackageStartupMessages({
   library(readr)
   library(here)
 })
 
-dir.create(here::here("outputs","results"), showWarnings = FALSE, recursive = TRUE)
-d <- readr::read_csv(here::here("outputs","data","processed.csv"), show_col_types = FALSE)
-
-needed <- c("mean_log_rt","log_freq","strokes")
-if (!all(needed %in% names(d))) {
-  stop("Processed data missing required columns: ", paste(setdiff(needed, names(d)), collapse = ", "))
-}
+d <- readr::read_csv(here("outputs","data","processed.csv"), show_col_types = FALSE)
 
 mod <- lm(mean_log_rt ~ log_freq + strokes, data = d)
 s   <- summary(mod)
 
 co    <- coef(mod)
-r2    <- unname(s$r.squared)
-adjr2 <- unname(s$adj.r.squared)
-sigma <- unname(s$sigma)
+r2    <- s$r.squared
+adjr2 <- s$adj.r.squared
+sigma <- s$sigma
 aic   <- AIC(mod)
 bic   <- BIC(mod)
 n     <- nrow(d)
 
-out <- here::here("outputs","results","metrics.yml")
+out <- here("outputs","results","metrics.yml")
 lines <- c(
   sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
   'model: lm(mean_log_rt ~ log_freq + strokes)',
@@ -42,9 +34,5 @@ lines <- c(
   sprintf('aic: %.6f', aic),
   sprintf('bic: %.6f', bic)
 )
-tmp <- paste0(out, ".tmp")
-cat(paste0(lines, collapse = "\n"), "\n", file = tmp)
-if (!file.rename(tmp, out)) {
-  stop("Failed to move temporary metrics YAML into place.")
-}
+cat(paste0(lines, collapse = "\n"), "\n", file = out)
 cat(sprintf("Wrote %s\n", out))
