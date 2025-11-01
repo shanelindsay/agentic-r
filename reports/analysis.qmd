@@ -4,13 +4,13 @@ format:
   html:
     toc: true
   pdf:
-    toc: true
+    toc: false
     pdf-engine: tectonic
   docx: default
   gfm: default
 freeze: auto
 execute:
-  echo: true
+  echo: false
 ---
 
 ```{r}
