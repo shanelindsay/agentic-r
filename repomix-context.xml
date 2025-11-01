@@ -1,0 +1,656 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files and files not matching ignore patterns, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: R/**, reports/**, docs/**, configs/**, AGENTS.md, agents.md, README.md, readme.md
+- Files matching these patterns are excluded: **/node_modules/**, **/.git/**, **/dist/**, **/build/**, **/.venv/**, **/venv/**, **/*.min.*
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+configs/
+  cleaning.yml
+docs/
+  data-sources.md
+R/
+  01_prepare.R
+  02_model.R
+reports/
+  .gitignore
+  analysis.qmd
+AGENTS.md
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="reports/.gitignore">
+/.quarto/
+**/*.quarto_ipynb
+</file>
+
+<file path="configs/cleaning.yml">
+correct_only: true
+rt_min_ms: 200
+rt_max_ms: 2000
+
+# Data sources 
+raw_trials: data/raw/SCLP_full_TrialsSCLP.csv
+raw_type: sclp_full   # one of: sclp_full, sample
+cld_file: data/raw/chineselexicaldatabase2.1.txt
+cld_type: full        # one of: full, sample
+</file>
+
+<file path="docs/data-sources.md">
+# Data Sources 
+
+## 1) SCLP — Simplified Chinese Lexicon Project (2025)
+
+What it is
+
+- Character lexical‑decision megastudy for 8,105 simplified characters plus 4,864 pseudocharacters (trial‑level). Open‑access article (CC BY 4.0). The authors provide trial‑level data and stimuli materials. DOI: https://doi.org/10.3758/s13428-025-02701-7  
+- Data and materials are hosted on OSF; analysis code and images on GitHub (links provided in the article).
+
+- Scope: 8,105 characters + 4,864 pseudocharacters; published in Behavior Research Methods, June 2025.  
+- Trial‑level file: `TrialsSCLP.csv` (approximately 376k × 7) with columns `item, subject, lexicality, level, accuracy, rt, zscore`.  
+- Recommended analysis uses `zscore` for RT normalization.
+
+Where to fetch
+
+- OSF project (trial‑level data and materials) and linked GitHub repository (images/code), as stated in the article. Start from the article DOI above and follow the OSF/GitHub links.
+
+Field notes for this pipeline
+
+- Filter to real characters: `lexicality == "character"`.  
+- Trim implausible RTs (e.g., 200–2000 ms) and correct trials only (`accuracy == 1`).  
+- Aggregate per character: `mean(log RT)` and `accuracy`; then join predictors.  
+- `level` describes pseudocharacter generation depth; for real characters it is fixed at `1`—can be ignored after filtering.
+
+Licensing/availability
+
+- Article is CC BY 4.0; the OSF node hosts data/materials. Follow the licence statement on the OSF node for data reuse and attribution.
+
+---
+
+## 2) CLD — Chinese Lexical Database (2018) / CLD 2.1
+
+What it is
+
+- Large‑scale lexical database for simplified Mandarin with >260 variables and 48,644 words (4,895 unique characters; 3,913 one‑character words). Introduced by Sun et al. (2018, Behavior Research Methods).  
+- Downloadable “text dump” (ZIP) as CLD 2.1 from the University of Tübingen repository; an online search/download site is also available.
+
+Talk‑safe claims 
+
+- CLD 2.1 provides many lexical/orthographic variables (e.g., frequency measures, stroke counts, neighbourhood indices).  
+- Free to download from the Tübingen repository; a short PDF and README are supplied.  
+- The 2018 BRM paper introduces CLD and points to the web interface.
+
+Field notes for this pipeline
+
+- For the demo, keep only single‑character rows and a few predictors (e.g., `log_freq`, `strokes`).  
+- Column names vary slightly across exports; the dump is plain text (tab or comma).  
+- Use the Tübingen record and included docs for scope/variables and terms of use.
+
+Licensing/availability
+
+- The Tübingen repository record provides the downloadable dataset and documentation. Check the licence/terms indicated on that record before redistribution; cite the dataset record.
+
+---
+
+## How they fit the Makefile + R demo
+
+Minimal character‑level join
+
+1. From SCLP trials → aggregate to character‑level table with: `char, mean_log_rt, acc_rate`.  
+2. From CLD → select: `char, log_freq, strokes`.  
+3. Inner‑join on `char`.  
+4. Fit a tiny model for illustration: `lm(mean_log_rt ~ log_freq + strokes)`, then write a diffable `results/metrics.yml`.
+
+This is exactly what the included scripts do:
+
+- `R/01_prepare.R`: trims trials (200–2000 ms, correct only), aggregates, joins predictors → `data/processed/merged.csv`.  
+- `R/02_model.R`: fits the model, writes `results/metrics.yml`.
+
+---
+
+## References
+
+- Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods, 57, 206. https://doi.org/10.3758/s13428-025-02701-7  
+- Sun, C. C., Hendrix, P., Ma, J. Q., & Baayen, R. H. (2018). Chinese Lexical Database (CLD): A large‑scale lexical database for simplified Chinese. Behavior Research Methods, 50(5), 2606–2629. https://doi.org/10.3758/s13428-018-1038-3
+</file>
+
+<file path="R/02_model.R">
+# R/02_model.R
+# Fit a  model and write a diffable YAML with key metrics.
+# Input:  outputs/data/processed.csv
+# Output: outputs/results/metrics.yml
+
+suppressWarnings({
+  dir.create(here::here("outputs","results"), showWarnings = FALSE, recursive = TRUE)
+})
+d <- read.csv(here::here("outputs","data","processed.csv"), fileEncoding = "UTF-8")
+
+stopifnot(all(c("mean_log_rt","log_freq","strokes") %in% names(d)))
+mod <- lm(mean_log_rt ~ log_freq + strokes, data = d)
+s   <- summary(mod)
+
+co <- coef(mod)
+r2 <- s$r.squared
+n  <- nrow(d)
+
+out <- here::here("outputs","results","metrics.yml")
+lines <- c(
+  sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
+  'model: lm(mean_log_rt ~ log_freq + strokes)',
+  sprintf('n_obs: %d', n),
+  'coefficients:',
+  sprintf('  intercept: %.6f', unname(co[1])),
+  sprintf('  log_freq: %.6f', unname(co["log_freq"])),
+  sprintf('  strokes: %.6f',  unname(co["strokes"])),
+  sprintf('r2: %.6f', r2)
+)
+cat(paste0(lines, collapse = "\n"), "\n", file = out)
+cat(sprintf("Wrote %s\n", out))
+</file>
+
+<file path="AGENTS.md">
+# Agents Guide
+
+This document defines how agents work in this repo. It is **policy**: follow it unless a task explicitly says otherwise. Goals: clarity, reproducibility, auditable steps.
+
+## 1) Context
+
+* User: 
+* Work: 
+* Priorities: reproducibility, clarity, well documented workflows.
+* Default approach: prefer simple, auditable steps over clever automation.
+
+**Directory contract**
+
+- `R/` -> reusable functions only; no side effects on import; no top-level I/O.
+- `scripts/` -> orchestration, CLI entrypoints,  diagnostics helpers (tiny, no heavy compute).
+- `reports/` -> Quarto "views" that **read** pipeline outputs (QC, diagnostics, inference stubs).
+- `outputs/` -> all rendered artefacts (figures, tables, md/html from reports).
+
+**Non-negotiables**
+1. Do not add new compute into QMDs. If a report needs data that doesn't exist, add a target + function.
+2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
+3. Prefer plain-text, diffable artefacts (CSV/MD/YAML) in `outputs/`.
+4. Use `here::here()` for all paths; no relative "../" or `getwd()` assumption
+
+### 2.1 General rules
+
+* Cloud: expect containerised tools and fixed resources. Long jobs may time out.
+* Laptop: respect limited resources and mixed OS quirks (Windows or Linux).
+* HPC: use batch schedulers, handle larger data and high memory workloads.
+* Parallel agents may be running locally and in the cloud. Sync often and separate concerns.
+* Prefer tidyverse coding in general
+
+### 2.2 Environment wrapper (mandatory)
+
+* Always execute R and Quarto via `./dev/run-in-env.sh`.
+* Shared environment families: `r-core` (analysis, targets, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
+* Use per-project R packages via `R_LIBS_USER=$PWD/.rlib`.
+
+**Quickstart**
+
+```bash
+# Run an R script
+./dev/run-in-env.sh Rscript scripts/01_data_processing.R
+
+# Render a Quarto document
+./dev/run-in-env.sh quarto render manuscript/manuscript.qmd
+
+# Start an interactive R session
+./dev/run-in-env.sh R
+
+```
+
+## 3) Git & PR Workflow (Atomic + Frequent)
+
+We use GitHub for code, manuscript preparation, and project management. When you hear "issue" - assume github issue (and interact with gh CLI - you have token to access).
+
+### 3.1 Branching and commits
+
+* Work on `main`, DO NOT USE worktree or switch branches for new tasks. You can suggest it when you think it is a good idea but you should get approval.
+* Be clear which branch you are working on. Pull regularly so `main` stays synced.
+* Commit small, logical changes frequently. After progress, commit and push or pull frequently.
+* Keep the working tree tidy. Avoid untracked files - assume as default files should be tracked. If in doubt about tracking, ask.
+* Track **generated outputs under `outputs/`** (CSV, MD, HTML, PNG, etc.) so reviewers see what changed.
+* Do not delete generated files in `outputs/` unless explicitly requested or they're superseded by a rename in the same PR (call this out in the PR body).
+
+## Atomic Commits and Git management
+
+We operate on the principle of **atomic commits**.
+
+We normally use GitHub Issues to coordinate.
+
+We may have multiple agents working in parallel, and users working on different machines.
+
+---
+
+# Commit Rules
+
+- **Keep commits frequent** - keep the remote up to date as much as possible.
+- **Reference Issues** in commit titles if you are working on an issue (e.g., `fix: handle null IDs #123`).
+- **Keep commits atomic** - commit only the files you touched and list each path explicitly.
+  `git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
+  For brand-new files, use:
+  `git restore --staged :/ && git add "path/to/file1" "path/to/file2" && git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
+- **Always double-check** `git status` before any commit.
+- **Delete unused or obsolete files** when your changes make them irrelevant (e.g., refactors, feature removals).
+  Revert files only when the change is yours or explicitly requested.
+- **Coordinate with other agents** before removing their in-progress edits. Assume any edits you encounter have a purpose.
+  Do not revert or delete work you did not author unless everyone agrees.
+- **Never use** `git restore` (or similar commands) to revert files you did not author.
+  Coordinate with other agents so their in-progress work stays intact.
+- **ABSOLUTELY NEVER** run destructive Git operations (e.g., `git reset --hard`, `rm`, `git checkout` / `git restore` to an older commit) unless the user gives explicit written instruction in this conversation.
+  Treat these commands as catastrophic; if you are even slightly unsure, stop and ask before touching them.
+- **Before deleting a file to resolve a local failure, stop and ask the user.**
+  Other agents are often editing adjacent files; deleting their work to silence an error is never acceptable without explicit approval.
+- **Never amend commits** unless you have explicit written approval in the task thread.
+- **Moving, renaming, and restoring files** is allowed.
+- **Quote paths containing brackets or parentheses** (e.g., `src/app/[candidate]/**`) when staging or committing so the shell does not treat them as globs or subshells.
+- **When running `git rebase`**, avoid opening editors:
+  export `GIT_EDITOR=:` and `GIT_SEQUENCE_EDITOR=:` (or pass `--no-edit`) so default messages are used automatically.
+
+### 3.2 Code review and approval
+
+* We do not use CI in these workflows.
+* Use Pull Requests for review. You can ask for reviews on commits.
+* Reference the driving issue in the PR description. Include a closing keyword, for example `Closes #123`.
+
+## 7) Development Workflow
+
+Because agents are involved, prefer text-based, diffable artefacts--**and keep compute in the pipeline**.
+
+### 7.1 WRI cycle
+
+1. **Write**: pipeline code in `R/` + targets in `_targets.R`; report code in `reports/*.qmd`.
+2. **Run**: build with `{targets}`; render QMD **to `outputs/reports/...`**.
+3. **Inspect**: review rendered MD/HTML in `outputs/...`.
+4. **Iterate**: refine; commit both code and updated `outputs/`.
+
+### 7.2 Principles for documents and code
+
+* Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in a publication-ready format via apaquarto. It consumes figures and tables generated earlier.
+* The data processing and analysis pipeline should be simple and reproducible and shareable on OSF.
+* Readers care about the finished result. Avoid historical comments unless they aid understanding.
+* Do not create ad hoc `v2` files. Use GitHub for versioning.
+* Use Makefiles where helpful to automate the pipeline.
+* QMDs are **views** and logs; heavy compute belongs in targets + `R/`.
+* Do not mix computation and interpretation. Interpretive prose is based on QMD outputs and numbers can be inlined when needed.
+* YAML side outputs generated mid pipeline may be read by `manuscript.qmd`. Prefer YAML over `.rds` for plain text diffability.
+* Heavy R objects, for example Bayesian mixed models, can be saved as `.rds`.
+* Exploratory reports are outside the core reproducible pipeline.
+* Quarto defaults: `freeze: true`, `echo: true`. See freeze policy below.
+* Prepare final tables and themed figures at the end of the pipeline and consume them in `manuscript.qmd`. No computation (except potentially minor formatting) should occur in `manuscript.qmd`.
+
+### 7.3 Path management
+
+* Use `here()` for all file paths. Add a `.here` file if needed.
+
+### 7.4 Tests
+
+* QMDs must render.
+* Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown.
+* Add other tests as necessary.
+
+### 7.5 Quarto freeze policy
+
+Quarto writes cached renders into `_freeze/` directories adjacent to each QMD (e.g., `outputs/reports/exp1/_freeze/06_exp1_report/`); these directories are ignored by Git but must remain in place for deterministic rebuilds.
+
+* Production/stable runs: prefer `freeze: true` for exact outputs and deterministic rebuilds.
+* Local development: use the `local` profile (`configs/profiles/local.yaml`) with `reports: { freeze: auto }` to re-render only changed chunks.
+* Before tagging outputs, restore `freeze: true` (or remove the local profile) and confirm the corresponding `_freeze/` directories are populated.
+
+### 7.6 Core implementation principles
+
+* Fail fast and surface errors early.
+* Do not use defensive programming such as conditional fallbacks for missing data.
+* No workarounds or fallbacks. Fix root causes.
+* Assume a deterministic pipeline. If data is missing, fix upstream.
+* Keep the file system organised. Use `scratch/` or `tmp/` for temporary work.
+* Keep debugging work separate or avoid committing it once fixed.
+* Implement the simplest solution that works. Avoid over engineering.
+* Prioritise clarity and explainability over performance or terseness. Assume the code will be shared and avoid obvious comments.
+* Avoid unnecessary intermediate data structures.
+
+### 7.7 Long running tooling and stuck runs
+
+* Long running tooling such as tests, docker compose, or migrations must always be invoked with sensible timeouts or in non interactive batch mode. Never leave a shell command waiting indefinitely. Prefer explicit timeouts, scripted runs, or log polling after the command exits.
+* If a Codex run is too long or stuck on tool calling, apply the same rule. Use non interactive batch, explicit timeouts, or exit and resume with log inspection.
+</file>
+
+<file path="reports/analysis.qmd">
+---
+title: "Agentic AI Demo Report"
+format:
+  html:
+    toc: true
+  pdf:
+    toc: true
+    pdf-engine: tectonic
+  docx: default
+  gfm: default
+freeze: true
+execute:
+  echo: true
+---
+
+```{r}
+#| label: setup
+#| message: false
+library(yaml)
+
+metrics_path <- here::here("outputs","results","metrics.yml")
+cleaning_path <- here::here("outputs","results","cleaning.yml")
+fig_path <- here::here("outputs","figures","rt_hist.png")
+
+stopifnot(file.exists(metrics_path))
+stopifnot(file.exists(cleaning_path))
+stopifnot(file.exists(fig_path))
+
+metrics <- yaml::read_yaml(metrics_path)
+cleaning <- yaml::read_yaml(cleaning_path)
+
+stopifnot(!is.null(metrics$n_obs))
+N <- as.integer(metrics$n_obs)
+stopifnot(!is.na(N))
+
+# helpers for formatting
+fmt3 <- function(x) sprintf("%.3f", x)
+fmt6 <- function(x) sprintf("%.6f", x)
+```
+
+## Overview
+
+This report reads pre-computed outputs from the simple demo pipeline.
+
+- Processed data: `outputs/data/processed.csv`
+- Cleaning summary: `outputs/results/cleaning.yml`
+- Model metrics: `outputs/results/metrics.yml`
+
+## Cleaning Summary
+
+The pipeline kept `r cleaning$counts$kept_trials` of `r cleaning$counts$total_trials` trials (dropped `r cleaning$counts$dropped_trials`).
+Settings: correct-only = `r cleaning$trimming$correct_only`, RT range = `r cleaning$trimming$rt_min_ms`–`r cleaning$trimming$rt_max_ms` ms.
+
+```{r}
+data.frame(
+  setting = c("correct_only","rt_min_ms","rt_max_ms","total_trials","kept_trials","dropped_trials"),
+  value = c(
+    as.character(cleaning$trimming$correct_only),
+    cleaning$trimming$rt_min_ms,
+    cleaning$trimming$rt_max_ms,
+    cleaning$counts$total_trials,
+    cleaning$counts$kept_trials,
+    cleaning$counts$dropped_trials
+  )
+)
+
+```
+## RT Histogram (kept trials)
+
+```{r}
+knitr::include_graphics(fig_path)
+```
+
+## Model Metrics
+
+Model: `r metrics$model`  (N = `r N`)
+
+R² = `r fmt3(as.numeric(metrics$r2))`.
+
+Coefficients:
+
+```{r}
+data.frame(
+  term = c("intercept","log_freq","strokes"),
+  estimate = c(
+    fmt6(as.numeric(metrics$coefficients$intercept)),
+    fmt6(as.numeric(metrics$coefficients$log_freq)),
+    fmt6(as.numeric(metrics$coefficients$strokes))
+  )
+)
+```
+</file>
+
+<file path="R/01_prepare.R">
+# R/01_prepare.R
+# Read trial-level SCLP slice + CLD predictors; aggregate and join.
+# Input:  data/raw/sclp_sample.csv (columns: char, rt_ms, correct)
+#         data/raw/cld_sample.csv  (columns: char, log_freq, strokes)
+# Output: outputs/data/processed.csv
+
+opts <- options(stringsAsFactors = FALSE)
+suppressWarnings({
+dir.create(here::here("outputs","data"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here::here("outputs","results"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here::here("outputs","figures"), recursive = TRUE, showWarnings = FALSE)
+})
+
+# shared cleaning parameters and data paths
+cfg_path <- here::here("configs","cleaning.yml")
+stopifnot(file.exists(cfg_path))
+cfg <- yaml::read_yaml(cfg_path)
+stopifnot(all(c("correct_only","rt_min_ms","rt_max_ms","raw_trials","raw_type","cld_file","cld_type") %in% names(cfg)))
+correct_only <- isTRUE(cfg$correct_only)
+rt_min <- as.numeric(cfg$rt_min_ms)
+rt_max <- as.numeric(cfg$rt_max_ms)
+stopifnot(is.finite(rt_min), is.finite(rt_max), rt_min < rt_max)
+
+raw_trials_path <- here::here(cfg$raw_trials)
+cld_path <- here::here(cfg$cld_file)
+stopifnot(file.exists(raw_trials_path), file.exists(cld_path))
+
+# Load SCLP trials (support 'sclp_full' or 'sample')
+if (identical(cfg$raw_type, "sclp_full")) {
+sclp0 <- read.csv(raw_trials_path, fileEncoding = "UTF-8")
+# Expect columns: item, accuracy, rt
+stopifnot(all(c("item","accuracy","rt") %in% names(sclp0)))
+sclp <- data.frame(char = sclp0$item, rt_ms = sclp0$rt, correct = sclp0$accuracy)
+} else if (identical(cfg$raw_type, "sample")) {
+sclp <- read.csv(raw_trials_path, fileEncoding = "UTF-8")
+stopifnot(all(c("char","rt_ms","correct") %in% names(sclp)))
+} else {
+stop("Unknown raw_type in configs/cleaning.yml: ", cfg$raw_type)
+}
+
+# Load CLD (support 'full' or 'sample')
+if (identical(cfg$cld_type, "full")) {
+cld0 <- read.csv(cld_path, fileEncoding = "UTF-8")
+# Expect columns: Word, Length, Strokes, Frequency
+stopifnot(all(c("Word","Length","Strokes","Frequency") %in% names(cld0)))
+cld <- subset(cld0, Length == 1, select = c(Word, Strokes, Frequency))
+names(cld) <- c("char","strokes","freq")
+  cld$log_freq <- log10(cld$freq + 1)
+    cld <- cld[, c("char","log_freq","strokes")]
+    } else if (identical(cfg$cld_type, "sample")) {
+      cld <- read.csv(cld_path, fileEncoding = "UTF-8")
+        stopifnot(all(c("char","log_freq","strokes") %in% names(cld)))
+        } else {
+          stop("Unknown cld_type in configs/cleaning.yml: ", cfg$cld_type)
+          }
+
+          ## cfg already loaded above
+
+          # Basic sanity
+          stopifnot(all(c("char","rt_ms","correct") %in% names(sclp)))
+          stopifnot(all(c("char","log_freq","strokes") %in% names(cld)))
+
+          # Trim and aggregate (shared parameters)
+          keep <- rep(TRUE, nrow(sclp))
+          if (correct_only) keep <- keep & sclp$correct == 1
+          keep <- keep & sclp$rt_ms >= rt_min & sclp$rt_ms <= rt_max
+          sclp_trim <- sclp[keep, c("char","rt_ms")]
+
+          # Persist filtered trials for reuse by other steps
+          filt_csv <- here::here("outputs","data","trials_filtered.csv")
+          filtered_trials <- sclp[keep, c("char","rt_ms","correct")]
+          write.csv(filtered_trials, filt_csv, row.names = FALSE, fileEncoding = "UTF-8")
+
+          # mean of log RT per character
+          agg_rt <- aggregate(rt_ms ~ char, data = sclp_trim, FUN = function(x) mean(log(x)))
+          names(agg_rt)[2] <- "mean_log_rt"
+
+          # accuracy per character from ALL trials (not just keep)
+          agg_acc <- aggregate(correct ~ char, data = sclp[, c("char","correct")], FUN = mean)
+          names(agg_acc)[2] <- "acc_rate"
+
+          # join
+          m1 <- merge(agg_rt, agg_acc, by = "char", all.x = TRUE)
+          dat <- merge(m1, cld[, c("char","log_freq","strokes")], by = "char", all.x = TRUE)
+
+          # drop rows missing predictors
+          ok <- complete.cases(dat$log_freq) & complete.cases(dat$strokes)
+          dat <- dat[ok, ]
+
+          # write
+          out_csv <- here::here("outputs","data","processed.csv")
+          write.csv(dat, out_csv, row.names = FALSE, fileEncoding = "UTF-8")
+          cat(sprintf("Wrote %d rows to %s\n", nrow(dat), out_csv))
+
+          # Write cleaning summary YAML + histogram
+          clean_yaml <- here::here("outputs","results","cleaning.yml")
+          total <- nrow(sclp)
+          kept  <- nrow(filtered_trials)
+          dropd <- total - kept
+          lines <- c(
+            sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
+              'trimming:',
+                sprintf('  correct_only: %s', if (correct_only) "true" else "false"),
+                  sprintf('  rt_min_ms: %s', rt_min),
+                    sprintf('  rt_max_ms: %s', rt_max),
+                      'counts:',
+                        sprintf('  total_trials: %d', total),
+                          sprintf('  kept_trials: %d',  kept),
+                            sprintf('  dropped_trials: %d', dropd)
+                            )
+                            cat(paste0(lines, collapse = "\n"), "\n", file = clean_yaml)
+
+                            fig_path <- here::here("outputs","figures","rt_hist.png")
+                            png(filename = fig_path, width = 800, height = 500)
+                            hist(
+                              filtered_trials$rt_ms,
+                                breaks = 40,
+                                  main = sprintf("RT histogram (kept %d/%d trials)", kept, total),
+                                    xlab = "RT (ms)",
+                                      col = "#4477AA"
+                                      )
+                                      invisible(dev.off())
+
+                                      cat(sprintf("Wrote %s, %s, and %s\n", out_csv, clean_yaml, fig_path))
+</file>
+
+<file path="README.md">
+# Agentic R Lexical-Decision Demo (scripts + Quarto)
+
+A minimal, R-focused, agent-friendly pipeline for a **lexical decision** demo:
+- **Task:** character-level lexical decision (RT/accuracy).
+- **Data:** tiny slices from the Simplified Chinese Lexicon Project (SCLP; trial-level) and the Chinese Lexical Database (CLD; predictors).
+- **Pipeline:** `make` orchestrates 3 tiny steps + a report → writes **diffable** outputs under `outputs/` (e.g., `outputs/results/metrics.yml`).
+
+## Why this repo?
+Agents (e.g., Codex/Claude Code/Cursor) behave like new lab members arriving cold. A tidy repo + Makefile + small scripts gives them structure; you stay in control by running scripts deterministically and reviewing diffs.
+
+## Quick start (local)
+1. Install R (≥ 4.2) and `make`.
+2. Clone:  
+   ```bash
+   git clone <your-repo-url> agentic-r-lexdec-demo
+   cd agentic-r-lexdec-demo
+   ```
+3. Run the pipeline:
+
+   ```bash
+   make          # or: make data && make analyse && make report
+   ```
+4. Inspect the outputs:
+   - `outputs/data/processed.csv`
+   - `outputs/results/cleaning.yml`
+   - `outputs/results/metrics.yml` (intercept/slope(s)/R², plus `n_obs` and timestamp)
+   - `outputs/reports/analysis.{html,pdf,docx,md}`
+
+### Optional: micromamba wrapper
+
+If you use micromamba:
+
+```bash
+./scripts/run_r.sh R/01_prepare.R
+./scripts/run_r.sh R/02_model.R
+```
+
+The wrapper runs `Rscript` inside a named environment.
+
+## Data 
+
+See the licences, and fetch locations: `docs/data-sources.md`.
+
+* **SCLP trial‑level data**: trial‑level lexical decision for 8,105 characters + 4,864 pseudocharacters. 
+
+* **CLD predictors**: lexical variables for simplified Mandarin words. 
+
+## How it works
+
+* `configs/cleaning.yml`: shared parameters for trimming + file sources (full SCLP + CLD).
+* `R/01_prepare.R`: applies trimming once, writes `outputs/data/trials_filtered.csv`, aggregates to per-character `outputs/data/processed.csv`, and emits cleaning summary + histogram.
+* `R/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
+* `reports/analysis.qmd`: reads YAML and figure, renders to `outputs/reports/`.
+
+
+## Scientific thinking skills library
+
+This repo now bundles the **scientific-thinking** skill cards from K-Dense AI’s [Claude Scientific Skills](https://github.com/K-Dense-AI/claude-scientific-skills) collection. The content lives in `skills/scientific-thinking/` and includes detailed guidance for:
+
+- literature reviews, hypothesis generation, exploratory data analysis
+- critical review, peer review, scholar evaluation, and scientific brainstorming
+- statistical analysis, visualization, writing, and document-format skills (PDF, DOCX, PPTX, XLSX)
+
+The skill content is licensed under MIT per `skills/scientific-thinking/LICENSE.md`, and each document skill subfolder carries additional notices where provided by the source project.
+
+## Attribution
+
+* SCLP: Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods. [DOI][sclp-doi]
+* CLD: Sun, C. C., Hendrix, P., Ma, J. Q., & Baayen, R. H. (2018). Chinese Lexical Database (CLD): A large‑scale lexical database for simplified Chinese. Behavior Research Methods. [DOI][cld-paper]
+
+[sclp-doi]: https://doi.org/10.3758/s13428-025-02701-7
+[cld-paper]: https://doi.org/10.3758/s13428-018-1038-3
+</file>
+
+</files>
