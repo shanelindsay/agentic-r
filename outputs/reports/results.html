@@ -84,6 +84,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#cleaning" id="toc-cleaning" class="nav-link active" data-scroll-target="#cleaning">Cleaning</a></li>
   <li><a href="#baseline-model-frequency-and-strokes" id="toc-baseline-model-frequency-and-strokes" class="nav-link" data-scroll-target="#baseline-model-frequency-and-strokes">Baseline model: frequency and strokes</a></li>
+  <li><a href="#frequency-effect-on-recognition-speed" id="toc-frequency-effect-on-recognition-speed" class="nav-link" data-scroll-target="#frequency-effect-on-recognition-speed">Frequency effect on recognition speed</a></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="results.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li><li><a href="results.docx"><i class="bi bi-file-word"></i>MS Word</a></li><li><a href="results.md"><i class="bi bi-file-code"></i>Github (GFM)</a></li></ul></div></nav>
 </div>
@@ -118,7 +119,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>fmt6 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.6f"</span>, x)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>cleaning <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"cleaning.yml"</span>))</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"base_lm.yml"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"base_lm.yml"</span>))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>freq <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"frequency_effect.yml"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="cleaning" class="level2">
 <h2 class="anchored" data-anchor-id="cleaning">Cleaning</h2>
@@ -182,6 +184,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>R² 0.434; adjusted R² 0.433; residual sigma 0.099. AIC -6851.160, BIC -6826.134.</p>
+</section>
+<section id="frequency-effect-on-recognition-speed" class="level2">
+<h2 class="anchored" data-anchor-id="frequency-effect-on-recognition-speed">Frequency effect on recognition speed</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>freq_terms <span class="ot">&lt;-</span> <span class="fu">names</span>(freq<span class="sc">$</span>coefficients)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>freq_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">term =</span> freq_terms,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimate =</span> <span class="fu">sapply</span>(freq<span class="sc">$</span>coefficients, <span class="cf">function</span>(x) <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(x<span class="sc">$</span>estimate))),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">conf_low =</span> <span class="fu">sapply</span>(freq<span class="sc">$</span>coefficients, <span class="cf">function</span>(x) <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(x<span class="sc">$</span>conf_low))),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">conf_high =</span> <span class="fu">sapply</span>(freq<span class="sc">$</span>coefficients, <span class="cf">function</span>(x) <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(x<span class="sc">$</span>conf_high)))</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>freq_df</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                   term  estimate  conf_low conf_high
+(Intercept) (Intercept)  6.452355  6.441170  6.463540
+log_freq       log_freq -0.070823 -0.074644 -0.067002
+strokes         strokes  0.013355  0.012417  0.014294</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>freq_effect <span class="ot">&lt;-</span> freq<span class="sc">$</span>coefficients<span class="sc">$</span>log_freq</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>freq_multiplier <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">as.numeric</span>(freq_effect<span class="sc">$</span>estimate))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>freq_multiplier_low <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">as.numeric</span>(freq_effect<span class="sc">$</span>conf_low))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>freq_multiplier_high <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">as.numeric</span>(freq_effect<span class="sc">$</span>conf_high))</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>freq_pct_drop <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> freq_multiplier) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>freq_pct_drop_low <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> freq_multiplier_high) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>freq_pct_drop_high <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> freq_multiplier_low) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>pred_rt <span class="ot">&lt;-</span> freq<span class="sc">$</span>reference<span class="sc">$</span>predicted_rt_ms</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>freq_quantiles <span class="ot">&lt;-</span> freq<span class="sc">$</span>reference<span class="sc">$</span>log_freq_quantiles</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A 1-unit increase in log<sub>10</sub> frequency (roughly a tenfold usage jump) is associated with an estimated 6.837% faster recognition (95% CI 6.481% to 7.193%) when strokes are held at their median (10). This corresponds to predicted mean response times of approximately 723.216 ms (10th percentile frequency), 694.402 ms (median), and 624.486 ms (90th percentile). The marginal gains are largest through common characters—going from the median to the 90th percentile yields 69.916 ms faster responses—but they taper for the most extreme items: the 10th to 50th percentile shift saves about 28.814 ms, and the jump from the 90th to 95th percentile trims only 18.729 ms.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="fu">here</span>(freq<span class="sc">$</span>figure))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../outputs/figures/response_time_vs_frequency.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>A loess smooth over the character-level means reinforces the flattening: after log<sub>10</sub> frequency around 2.104, the curve levels off with uncertainty bands that overlap tightly, suggesting diminishing recognition-speed returns for the very most frequent characters.</p>
 <!--
 To add another analysis:
 1) create scripts/NN_slug.R that writes outputs/results/slug.yml

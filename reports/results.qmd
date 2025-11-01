@@ -20,6 +20,7 @@ fmt6 <- function(x) sprintf("%.6f", x)
 
 cleaning <- yaml::read_yaml(here("outputs", "results", "cleaning.yml"))
 base <- yaml::read_yaml(here("outputs", "results", "base_lm.yml"))
+freq <- yaml::read_yaml(here("outputs", "results", "frequency_effect.yml"))
 ```
 
 ## Cleaning
@@ -70,6 +71,50 @@ data.frame(
 
 R² `r fmt3(as.numeric(base$r2))`; adjusted R² `r fmt3(as.numeric(base$adj_r2))`; residual sigma `r fmt3(as.numeric(base$sigma))`.
 AIC `r fmt3(as.numeric(base$aic))`, BIC `r fmt3(as.numeric(base$bic))`.
+
+## Frequency effect on recognition speed
+
+```{r}
+#| label: freq-table
+freq_terms <- names(freq$coefficients)
+freq_df <- data.frame(
+  term = freq_terms,
+  estimate = sapply(freq$coefficients, function(x) fmt6(as.numeric(x$estimate))),
+  conf_low = sapply(freq$coefficients, function(x) fmt6(as.numeric(x$conf_low))),
+  conf_high = sapply(freq$coefficients, function(x) fmt6(as.numeric(x$conf_high)))
+)
+freq_df
+
+freq_effect <- freq$coefficients$log_freq
+freq_multiplier <- exp(as.numeric(freq_effect$estimate))
+freq_multiplier_low <- exp(as.numeric(freq_effect$conf_low))
+freq_multiplier_high <- exp(as.numeric(freq_effect$conf_high))
+freq_pct_drop <- (1 - freq_multiplier) * 100
+freq_pct_drop_low <- (1 - freq_multiplier_high) * 100
+freq_pct_drop_high <- (1 - freq_multiplier_low) * 100
+pred_rt <- freq$reference$predicted_rt_ms
+freq_quantiles <- freq$reference$log_freq_quantiles
+```
+
+A 1-unit increase in log<sub>10</sub> frequency (roughly a tenfold usage jump) is associated with an estimated
+`r fmt3(freq_pct_drop)`% faster recognition (95% CI `r fmt3(freq_pct_drop_low)`% to `r fmt3(freq_pct_drop_high)`%) when strokes are held at their median
+(`r freq$reference$strokes_median`). This corresponds to predicted mean response times of approximately
+`r fmt3(unname(pred_rt["p010"]))` ms (10th percentile frequency),
+`r fmt3(unname(pred_rt["p050"]))` ms (median), and
+`r fmt3(unname(pred_rt["p090"]))` ms (90th percentile).
+The marginal gains are largest through common characters—going from the median to the 90th percentile yields
+`r fmt3(freq$flattening$delta_mid_high_ms)` ms faster responses—but they taper for the most extreme items:
+the 10th to 50th percentile shift saves about `r fmt3(freq$flattening$delta_low_mid_ms)` ms, and the jump from the 90th to 95th percentile trims only
+`r fmt3(freq$flattening$delta_high_top_ms)` ms.
+
+```{r}
+#| label: freq-plot
+knitr::include_graphics(here(freq$figure))
+```
+
+A loess smooth over the character-level means reinforces the flattening:
+after log<sub>10</sub> frequency around `r fmt3(unname(freq_quantiles["p090"]))`, the curve levels off with uncertainty bands that overlap tightly,
+suggesting diminishing recognition-speed returns for the very most frequent characters.
 
 <!--
 To add another analysis:

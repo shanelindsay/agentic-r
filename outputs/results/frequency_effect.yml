@@ -1,0 +1,43 @@
+id: frequency_effect
+title: Frequency effect on recognition speed (adjusting for strokes)
+model: lm(mean_log_rt ~ log_freq + strokes)
+n_obs: 3852
+coefficients:
+  (Intercept):
+    estimate: 6.452355
+    std_error: 0.005705
+    conf_low: 6.44117
+    conf_high: 6.46354
+  log_freq:
+    estimate: -0.070823
+    std_error: 0.001949
+    conf_low: -0.074644
+    conf_high: -0.067002
+  strokes:
+    estimate: 0.013355
+    std_error: 0.000479
+    conf_low: 0.012417
+    conf_high: 0.014294
+r2: 0.433654
+adj_r2: 0.43336
+sigma: 0.099372
+aic: -6851.159511
+bic: -6826.13412
+reference:
+  strokes_median: 10.0
+  log_freq_quantiles:
+    p010: 0.031
+    p050: 0.605
+    p090: 2.104
+    p095: 2.533
+  predicted_rt_ms:
+    p010: 723.216
+    p050: 694.402
+    p090: 624.486
+    p095: 605.757
+flattening:
+  delta_low_mid_ms: 28.814
+  delta_mid_high_ms: 69.916
+  delta_high_top_ms: 18.729
+figure: outputs/figures/response_time_vs_frequency.png
+timestamp: 2025-11-01T18:18:59+0000
