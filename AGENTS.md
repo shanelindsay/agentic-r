@@ -48,11 +48,12 @@ This document defines how agents work in this repo. It is **policy**: follow it 
 ### 3.1 Quick start
 
 ```bash
-# Run an R script
-./dev/run-in-env.sh Rscript scripts/01_data_processing.R
+# Run R scripts deterministically
+./dev/run-in-env.sh Rscript scripts/01_prepare.R
+./dev/run-in-env.sh Rscript scripts/02_model.R
 
 # Render a Quarto document
-./dev/run-in-env.sh quarto render manuscript/manuscript.qmd
+./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
 
 # Start an interactive R session
 ./dev/run-in-env.sh R

@@ -84,8 +84,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
   <li><a href="#cleaning-summary" id="toc-cleaning-summary" class="nav-link" data-scroll-target="#cleaning-summary">Cleaning Summary</a></li>
-  <li><a href="#model-metrics" id="toc-model-metrics" class="nav-link" data-scroll-target="#model-metrics">Model Metrics</a></li>
   <li><a href="#rt-histogram-kept-trials" id="toc-rt-histogram-kept-trials" class="nav-link" data-scroll-target="#rt-histogram-kept-trials">RT Histogram (kept trials)</a></li>
+  <li><a href="#model-metrics" id="toc-model-metrics" class="nav-link" data-scroll-target="#model-metrics">Model Metrics</a></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="analysis.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li><li><a href="analysis.docx"><i class="bi bi-file-word"></i>MS Word</a></li><li><a href="analysis.md"><i class="bi bi-file-code"></i>Github (GFM)</a></li></ul></div></nav>
 </div>
@@ -143,7 +143,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="cleaning-summary" class="level2">
 <h2 class="anchored" data-anchor-id="cleaning-summary">Cleaning Summary</h2>
-<p>The pipeline kept 276025 of 376101 trials (dropped 100076). Settings: correct-only = TRUE, RT range = 200–2000 ms.</p>
+<p>The pipeline kept 137133 of 235016 trials (dropped 97883). Settings: correct-only = TRUE, RT range = 200–2000 ms.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">setting =</span> <span class="fu">c</span>(<span class="st">"correct_only"</span>,<span class="st">"rt_min_ms"</span>,<span class="st">"rt_max_ms"</span>,<span class="st">"total_trials"</span>,<span class="st">"kept_trials"</span>,<span class="st">"dropped_trials"</span>),</span>
@@ -161,9 +161,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 1   correct_only   TRUE
 2      rt_min_ms    200
 3      rt_max_ms   2000
-4   total_trials 376101
-5    kept_trials 276025
-6 dropped_trials 100076</code></pre>
+4   total_trials 235016
+5    kept_trials 137133
+6 dropped_trials  97883</code></pre>
+</div>
+</div>
+</section>
+<section id="rt-histogram-kept-trials" class="level2">
+<h2 class="anchored" data-anchor-id="rt-histogram-kept-trials">RT Histogram (kept trials)</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(fig_path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../outputs/figures/rt_hist.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 </section>
@@ -171,34 +184,48 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="model-metrics">Model Metrics</h2>
 <p>Model: lm(mean_log_rt ~ log_freq + strokes) (N = 3852)</p>
 <p>R² = 0.434.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(metrics<span class="sc">$</span>adj_r2)) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">paste0</span>(<span class="st">"Adjusted R² = "</span>, <span class="fu">fmt3</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>adj_r2)), <span class="st">".</span><span class="sc">\n\n</span><span class="st">"</span>))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Adjusted R² = 0.433.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(metrics<span class="sc">$</span>sigma)) {</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">paste0</span>(<span class="st">"Residual sigma = "</span>, <span class="fu">fmt3</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>sigma)), <span class="st">".</span><span class="sc">\n\n</span><span class="st">"</span>))</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Residual sigma = 0.099.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(metrics<span class="sc">$</span>aic) <span class="sc">||</span> <span class="sc">!</span><span class="fu">is.null</span>(metrics<span class="sc">$</span>bic)) {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"Information criteria:</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  aic_val <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(metrics<span class="sc">$</span>aic)) <span class="fu">fmt3</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>aic)) <span class="cf">else</span> <span class="st">"NA"</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  bic_val <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(metrics<span class="sc">$</span>bic)) <span class="fu">fmt3</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>bic)) <span class="cf">else</span> <span class="st">"NA"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">data.frame</span>(<span class="at">metric =</span> <span class="fu">c</span>(<span class="st">"AIC"</span>, <span class="st">"BIC"</span>), <span class="at">value =</span> <span class="fu">c</span>(aic_val, bic_val)))</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Information criteria:
+
+  metric     value
+1    AIC -6851.160
+2    BIC -6826.134</code></pre>
+</div>
+</div>
 <p>Coefficients:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">term =</span> <span class="fu">c</span>(<span class="st">"intercept"</span>,<span class="st">"log_freq"</span>,<span class="st">"strokes"</span>),</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimate =</span> <span class="fu">c</span>(</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>coefficients<span class="sc">$</span>intercept)),</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>coefficients<span class="sc">$</span>log_freq)),</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>coefficients<span class="sc">$</span>strokes))</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">term =</span> <span class="fu">c</span>(<span class="st">"intercept"</span>,<span class="st">"log_freq"</span>,<span class="st">"strokes"</span>),</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimate =</span> <span class="fu">c</span>(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>coefficients<span class="sc">$</span>intercept)),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>coefficients<span class="sc">$</span>log_freq)),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(metrics<span class="sc">$</span>coefficients<span class="sc">$</span>strokes))</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>       term  estimate
 1 intercept  6.452355
 2  log_freq -0.070823
 3   strokes  0.013355</code></pre>
-</div>
-</div>
-</section>
-<section id="rt-histogram-kept-trials" class="level2">
-<h2 class="anchored" data-anchor-id="rt-histogram-kept-trials">RT Histogram (kept trials)</h2>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(fig_path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="../outputs/figures/rt_hist.png" class="img-fluid figure-img"></p>
-</figure>
-</div>
 </div>
 </div>
 </section>

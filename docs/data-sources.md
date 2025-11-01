@@ -64,8 +64,8 @@ Minimal character‑level join
 
 This is exactly what the included scripts do:
 
-- `R/01_prepare.R`: trims trials (200–2000 ms, correct only), aggregates, joins predictors → `data/processed/merged.csv`.  
-- `R/02_model.R`: fits the model, writes `results/metrics.yml`.
+- `scripts/01_prepare.R`: trims trials (200–2000 ms, correct only), aggregates, joins predictors → `outputs/data/processed.csv`.  
+- `scripts/02_model.R`: fits the model, writes `outputs/results/metrics.yml`.
 
 ---
 
@@ -73,4 +73,3 @@ This is exactly what the included scripts do:
 
 - Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods, 57, 206. https://doi.org/10.3758/s13428-025-02701-7  
 - Sun, C. C., Hendrix, P., Ma, J. Q., & Baayen, R. H. (2018). Chinese Lexical Database (CLD): A large‑scale lexical database for simplified Chinese. Behavior Research Methods, 50(5), 2606–2629. https://doi.org/10.3758/s13428-018-1038-3  
-
