@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Agent Talk - Workflow</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <p class="section-label">Workflow</p>
+    <h2>Pipeline Overview</h2>
+  </header>
+  <ul>
+    <li>Makefile orchestrates <span class="emphasis">01_prepare.R</span> then <span class="emphasis">02_model.R</span></li>
+    <li>Data flows <span class="emphasis">raw -> processed -> results/metrics.yml</span></li>
+    <li>Quarto report reads results for publication-ready prose</li>
+    <li>Agents run everything via the environment wrapper</li>
+  </ul>
+</body>
+</html>
