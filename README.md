@@ -23,20 +23,18 @@ Agents (e.g., Codex/Claude Code/Cursor) behave like new lab members arriving col
 4. Inspect the output:
    `results/metrics.yml` (intercept/slope(s)/R², plus N and timestamp).
 
-### Optional: micromamba wrapper
+### Optional: run scripts manually (inside project env)
 
-If you use micromamba:
+Use the provided wrapper to ensure the micromamba environment is active:
 
 ```bash
-./scripts/run_r.sh R/01_prepare.R
-./scripts/run_r.sh R/02_model.R
+./dev/run-in-env.sh Rscript R/01_prepare.R
+./dev/run-in-env.sh Rscript R/02_model.R
 ```
-
-The wrapper runs `Rscript` inside a named environment.
 
 ## Data (tiny, curated slices)
 
-* **SCLP trial-level data**: trial-level lexical decision for 8,105 characters + 4,864 pseudocharacters. Download full data from OSF (see paper), then use `scripts/build_raw_samples.R` to create a small slice and commit it as `data/raw/sclp_sample.csv`. ([PMC][1])
+* **SCLP trial-level data**: trial-level lexical decision for 8,105 characters + 4,864 pseudocharacters. Download the full data from OSF (see paper) and create a tiny lawful slice (for example, select a handful of rows in R) before committing it as `data/raw/sclp_sample.csv`. ([PMC][1])
 * **CLD predictors**: lexical variables for simplified Mandarin words. Download from the CLD website and create a small slice `data/raw/cld_sample.csv` with at least `char`, `log_freq`, `strokes`. ([SpringerLink][2])
 
 > We **do not** redistribute the full datasets here. Please follow the providers’ terms when creating the tiny samples.
