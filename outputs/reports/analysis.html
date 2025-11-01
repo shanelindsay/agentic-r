@@ -87,6 +87,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#rt-histogram-kept-trials" id="toc-rt-histogram-kept-trials" class="nav-link" data-scroll-target="#rt-histogram-kept-trials">RT Histogram (kept trials)</a></li>
   <li><a href="#model-metrics" id="toc-model-metrics" class="nav-link" data-scroll-target="#model-metrics">Model Metrics</a></li>
   <li><a href="#character-frequency-model" id="toc-character-frequency-model" class="nav-link" data-scroll-target="#character-frequency-model">Character Frequency Model</a></li>
+  <li><a href="#visual-complexity-penalty" id="toc-visual-complexity-penalty" class="nav-link" data-scroll-target="#visual-complexity-penalty">Visual Complexity Penalty</a></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="analysis.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li><li><a href="analysis.docx"><i class="bi bi-file-word"></i>MS Word</a></li><li><a href="analysis.md"><i class="bi bi-file-code"></i>Github (GFM)</a></li></ul></div></nav>
 </div>
@@ -121,21 +122,56 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>freq_tidy_path <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"outputs"</span>,<span class="st">"results"</span>,<span class="st">"character_frequency_model_tidy.csv"</span>)</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>freq_glance_path <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"outputs"</span>,<span class="st">"results"</span>,<span class="st">"character_frequency_model_glance.csv"</span>)</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>freq_fig_path <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"outputs"</span>,<span class="st">"figures"</span>,<span class="st">"character_frequency_rt_vs_freq.png"</span>)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>metrics <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(metrics_path)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>cleaning <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(cleaning_path)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>freq_model_tidy <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(freq_tidy_path, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>freq_model_glance <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(freq_glance_path, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(metrics<span class="sc">$</span>n_obs)</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># helpers for formatting</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>fmt3 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.3f"</span>, x)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>fmt6 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.6f"</span>, x)</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>freq_coef <span class="ot">&lt;-</span> freq_model_tidy<span class="sc">$</span>Estimate[freq_model_tidy<span class="sc">$</span>term <span class="sc">==</span> <span class="st">"log_freq"</span>]</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>strokes_coef <span class="ot">&lt;-</span> freq_model_tidy<span class="sc">$</span>Estimate[freq_model_tidy<span class="sc">$</span>term <span class="sc">==</span> <span class="st">"strokes"</span>]</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>freq_pct <span class="ot">&lt;-</span> (<span class="fu">exp</span>(freq_coef) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>strokes_pct <span class="ot">&lt;-</span> (<span class="fu">exp</span>(strokes_coef) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>complexity_tidy_path <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"outputs"</span>,<span class="st">"results"</span>,<span class="st">"visual_complexity_model_tidy.csv"</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>complexity_glance_path <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"outputs"</span>,<span class="st">"results"</span>,<span class="st">"visual_complexity_model_glance.csv"</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>complexity_summary_path <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"outputs"</span>,<span class="st">"results"</span>,<span class="st">"visual_complexity_penalty_summary.yml"</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>complexity_partial_path <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"outputs"</span>,<span class="st">"data"</span>,<span class="st">"visual_complexity_partial_effect.csv"</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>complexity_fig_path <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"outputs"</span>,<span class="st">"figures"</span>,<span class="st">"visual_complexity_partial_effect.png"</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>metrics <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(metrics_path)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>cleaning <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(cleaning_path)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>freq_model_tidy <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(freq_tidy_path, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>freq_model_glance <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(freq_glance_path, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>complexity_model_tidy <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(complexity_tidy_path, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>complexity_model_glance <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(complexity_glance_path, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>complexity_partial <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(complexity_partial_path, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>complexity_summary <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(complexity_summary_path)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(metrics<span class="sc">$</span>n_obs)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="co"># helpers for formatting</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>fmt3 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.3f"</span>, x)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>fmt6 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.6f"</span>, x)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>fmt1 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.1f"</span>, x)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>fmt0 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.0f"</span>, x)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>fmt_p <span class="ot">&lt;-</span> <span class="cf">function</span>(p) {</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(p)) <span class="fu">return</span>(<span class="st">"= NA"</span>)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (p <span class="sc">&lt;</span> .<span class="dv">001</span>) <span class="fu">return</span>(<span class="st">"&lt; .001"</span>)</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  formatted <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="st">"= %.3f"</span>, p)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sub</span>(<span class="st">"= 0</span><span class="sc">\\</span><span class="st">."</span>, <span class="st">"= ."</span>, formatted)</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>freq_coef <span class="ot">&lt;-</span> freq_model_tidy<span class="sc">$</span>Estimate[freq_model_tidy<span class="sc">$</span>term <span class="sc">==</span> <span class="st">"log_freq"</span>]</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>strokes_coef <span class="ot">&lt;-</span> freq_model_tidy<span class="sc">$</span>Estimate[freq_model_tidy<span class="sc">$</span>term <span class="sc">==</span> <span class="st">"strokes"</span>]</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>freq_pct <span class="ot">&lt;-</span> (<span class="fu">exp</span>(freq_coef) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>strokes_pct <span class="ot">&lt;-</span> (<span class="fu">exp</span>(strokes_coef) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>complexity_estimate <span class="ot">&lt;-</span> complexity_model_tidy<span class="sc">$</span>Estimate[<span class="dv">1</span>]</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>complexity_se <span class="ot">&lt;-</span> complexity_model_tidy[[<span class="st">"Std. Error"</span>]][<span class="dv">1</span>]</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>complexity_t_value <span class="ot">&lt;-</span> complexity_model_tidy[[<span class="st">"t value"</span>]][<span class="dv">1</span>]</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>complexity_p_value <span class="ot">&lt;-</span> complexity_model_tidy[[<span class="st">"Pr(&gt;|t|)"</span>]][<span class="dv">1</span>]</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>complexity_penalty_pct <span class="ot">&lt;-</span> complexity_model_tidy<span class="sc">$</span>penalty_pct[<span class="dv">1</span>]</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>complexity_r2 <span class="ot">&lt;-</span> complexity_model_glance<span class="sc">$</span>r_squared[<span class="dv">1</span>]</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>complexity_df_resid <span class="ot">&lt;-</span> complexity_model_glance<span class="sc">$</span>df_residual[<span class="dv">1</span>]</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>complexity_n <span class="ot">&lt;-</span> complexity_model_glance<span class="sc">$</span>n[<span class="dv">1</span>]</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>complexity_sigma <span class="ot">&lt;-</span> complexity_model_glance<span class="sc">$</span>sigma[<span class="dv">1</span>]</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>complexity_baseline_strokes <span class="ot">&lt;-</span> complexity_summary<span class="sc">$</span>reference<span class="sc">$</span>strokes</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>complexity_baseline_rt <span class="ot">&lt;-</span> complexity_summary<span class="sc">$</span>reference<span class="sc">$</span>predicted_rt_ms</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>complexity_peak_strokes <span class="ot">&lt;-</span> complexity_summary<span class="sc">$</span>max_penalty<span class="sc">$</span>strokes</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>complexity_peak_penalty <span class="ot">&lt;-</span> complexity_summary<span class="sc">$</span>max_penalty<span class="sc">$</span>penalty_ms</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>complexity_peak_rt <span class="ot">&lt;-</span> complexity_summary<span class="sc">$</span>max_penalty<span class="sc">$</span>predicted_rt_ms</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>complexity_slope <span class="ot">&lt;-</span> complexity_summary<span class="sc">$</span>slope<span class="sc">$</span>rate_ms_per_stroke</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>complexity_slope_start <span class="ot">&lt;-</span> complexity_summary<span class="sc">$</span>slope<span class="sc">$</span>start_strokes</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>complexity_slope_end <span class="ot">&lt;-</span> complexity_summary<span class="sc">$</span>slope<span class="sc">$</span>end_strokes</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">Overview</h2>
@@ -288,6 +324,56 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Median response times fall sharply from rare to moderately frequent characters, but the loess curve flattens once log frequency exceeds roughly 3, suggesting diminishing speed gains for the most common characters. The widening confidence band at high frequency reflects the sparse sample, so the apparent plateau should be revisited when more characters are available, yet the current evidence aligns with classic frequency saturation once visual complexity is held constant.</p>
+</section>
+<section id="visual-complexity-penalty" class="level2">
+<h2 class="anchored" data-anchor-id="visual-complexity-penalty">Visual Complexity Penalty</h2>
+<p>To isolate the complexity penalty, we fit a linear regression predicting log median response time from log frequency and strokes. The model explained (R^2 = 0.990) with <em>n</em> = 4, leaving 0.043 residual log-millisecond noise. The strokes coefficient indicated slower responses for more complex characters ((b = 0.032), (SE = 0.012), (t(1) = 2.612), (p = .233)), equivalent to a 3.263% increase in median response time per additional stroke when frequency is held fixed.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(complexity_model_tidy, <span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 13%">
+<col style="width: 16%">
+<col style="width: 11%">
+<col style="width: 28%">
+<col style="width: 17%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">term</th>
+<th style="text-align: right;">Estimate</th>
+<th style="text-align: right;">Std. Error</th>
+<th style="text-align: right;">t value</th>
+<th style="text-align: right;">Pr(&gt;|t|)</th>
+<th style="text-align: right;">penalty_pct</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">strokes</td>
+<td style="text-align: right;">0.032</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">2.612</td>
+<td style="text-align: right;">0.233</td>
+<td style="text-align: right;">3.263</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(complexity_fig_path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../outputs/figures/visual_complexity_partial_effect.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Holding log frequency at its mean, predicted response times rose from 552 ms at 6.0 strokes to 669 ms at 12.0 strokes, a penalty of 117 ms concentrated at the top end of the sampled complexity range (see Figure). The slope over the final stroke increment was approximately 21.4 ms per stroke, underscoring that the penalty sharpens for the most intricate characters. Because only 4 characters passed preprocessing, these estimates should be interpreted as preliminary benchmarks until broader coverage is available.</p>
 </section>
 
 </main>
