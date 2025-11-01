@@ -4,122 +4,144 @@
 #         data/raw/cld_sample.csv  (columns: char, log_freq, strokes)
 # Output: outputs/data/processed.csv
 
-opts <- options(stringsAsFactors = FALSE)
-suppressWarnings({
-  dir.create(here::here("outputs","data"), recursive = TRUE, showWarnings = FALSE)
-    dir.create(here::here("outputs","results"), recursive = TRUE, showWarnings = FALSE)
-      dir.create(here::here("outputs","figures"), recursive = TRUE, showWarnings = FALSE)
-      })
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(readr)
+  library(purrr)
+  library(tidyr)
+  library(ggplot2)
+  library(glue)
+  library(yaml)
+  library(fs)
+  library(here)
+  library(rlang)
+})
 
-      # shared cleaning parameters and data paths
-      cfg_path <- here::here("configs","cleaning.yml")
-      stopifnot(file.exists(cfg_path))
-      cfg <- yaml::read_yaml(cfg_path)
-      stopifnot(all(c("correct_only","rt_min_ms","rt_max_ms","raw_trials","raw_type","cld_file","cld_type") %in% names(cfg)))
-      correct_only <- isTRUE(cfg$correct_only)
-      rt_min <- as.numeric(cfg$rt_min_ms)
-      rt_max <- as.numeric(cfg$rt_max_ms)
-      stopifnot(is.finite(rt_min), is.finite(rt_max), rt_min < rt_max)
+walk(
+  c("outputs/data", "outputs/results", "outputs/figures"),
+  ~dir_create(here(.x))
+)
 
-      raw_trials_path <- here::here(cfg$raw_trials)
-      cld_path <- here::here(cfg$cld_file)
-      stopifnot(file.exists(raw_trials_path), file.exists(cld_path))
+cfg_path <- here("configs", "cleaning.yml")
+if (!file_exists(cfg_path)) {
+  rlang::abort(glue("Cleaning config not found at {cfg_path}"))
+}
 
-      # Load SCLP trials (support 'sclp_full' or 'sample')
-      if (identical(cfg$raw_type, "sclp_full")) {
-        sclp0 <- read.csv(raw_trials_path, fileEncoding = "UTF-8")
-          # Expect columns: item, accuracy, rt
-            stopifnot(all(c("item","accuracy","rt") %in% names(sclp0)))
-              sclp <- data.frame(char = sclp0$item, rt_ms = sclp0$rt, correct = sclp0$accuracy)
-              } else if (identical(cfg$raw_type, "sample")) {
-                sclp <- read.csv(raw_trials_path, fileEncoding = "UTF-8")
-                  stopifnot(all(c("char","rt_ms","correct") %in% names(sclp)))
-                  } else {
-                    stop("Unknown raw_type in configs/cleaning.yml: ", cfg$raw_type)
-                    }
+cfg <- read_yaml(cfg_path)
 
-                    # Load CLD (support 'full' or 'sample')
-                    if (identical(cfg$cld_type, "full")) {
-                      cld0 <- read.csv(cld_path, fileEncoding = "UTF-8")
-                        # Expect columns: Word, Length, Strokes, Frequency
-                          stopifnot(all(c("Word","Length","Strokes","Frequency") %in% names(cld0)))
-                            cld <- subset(cld0, Length == 1, select = c(Word, Strokes, Frequency))
-                              names(cld) <- c("char","strokes","freq")
-                                cld$log_freq <- log10(cld$freq + 1)
-                                  cld <- cld[, c("char","log_freq","strokes")]
-                                  } else if (identical(cfg$cld_type, "sample")) {
-                                    cld <- read.csv(cld_path, fileEncoding = "UTF-8")
-                                      stopifnot(all(c("char","log_freq","strokes") %in% names(cld)))
-                                      } else {
-                                        stop("Unknown cld_type in configs/cleaning.yml: ", cfg$cld_type)
-                                        }
+required_fields <- c(
+  "correct_only", "rt_min_ms", "rt_max_ms",
+  "raw_trials", "raw_type", "cld_file", "cld_type"
+)
+missing_fields <- setdiff(required_fields, names(cfg))
+if (length(missing_fields) > 0) {
+  rlang::abort(glue("Missing expected config fields: {toString(missing_fields)}"))
+}
 
-                                        ## cfg already loaded above
+keep_correct <- isTRUE(cfg$correct_only)
+rt_min <- as.numeric(cfg$rt_min_ms)
+rt_max <- as.numeric(cfg$rt_max_ms)
 
-                                        # Basic sanity
-                                        stopifnot(all(c("char","rt_ms","correct") %in% names(sclp)))
-                                        stopifnot(all(c("char","log_freq","strokes") %in% names(cld)))
+if (!is.finite(rt_min) || !is.finite(rt_max) || rt_min >= rt_max) {
+  rlang::abort("rt_min_ms and rt_max_ms must be finite and rt_min_ms < rt_max_ms.")
+}
 
-                                        # Trim and aggregate (shared parameters)
-                                        keep <- rep(TRUE, nrow(sclp))
-                                        if (correct_only) keep <- keep & sclp$correct == 1
-                                        keep <- keep & sclp$rt_ms >= rt_min & sclp$rt_ms <= rt_max
-                                        sclp_trim <- sclp[keep, c("char","rt_ms")]
+raw_trials_path <- here(cfg$raw_trials)
+cld_path <- here(cfg$cld_file)
 
-                                        # Persist filtered trials for reuse by other steps
-                                        filt_csv <- here::here("outputs","data","trials_filtered.csv")
-                                        filtered_trials <- sclp[keep, c("char","rt_ms","correct")]
-                                        write.csv(filtered_trials, filt_csv, row.names = FALSE, fileEncoding = "UTF-8")
+if (!file_exists(raw_trials_path) || !file_exists(cld_path)) {
+  rlang::abort("Configured input files were not found. Check cleaning.yml paths.")
+}
 
-                                        # mean of log RT per character
-                                        agg_rt <- aggregate(rt_ms ~ char, data = sclp_trim, FUN = function(x) mean(log(x)))
-                                        names(agg_rt)[2] <- "mean_log_rt"
+sclp <- switch(
+  cfg$raw_type,
+  sclp_full = read_csv(raw_trials_path, show_col_types = FALSE) %>%
+    transmute(
+      char = item,
+      rt_ms = rt,
+      correct = accuracy
+    ),
+  sample = read_csv(raw_trials_path, show_col_types = FALSE) %>%
+    select(char, rt_ms, correct),
+  rlang::abort(glue("Unsupported raw_type '{cfg$raw_type}' in cleaning config."))
+) %>%
+  mutate(correct = as.numeric(correct))
 
-                                        # accuracy per character from ALL trials (not just keep)
-                                        agg_acc <- aggregate(correct ~ char, data = sclp[, c("char","correct")], FUN = mean)
-                                        names(agg_acc)[2] <- "acc_rate"
+cld <- switch(
+  cfg$cld_type,
+  full = read_csv(cld_path, show_col_types = FALSE) %>%
+    filter(Length == 1) %>%
+    transmute(
+      char = Word,
+      strokes = Strokes,
+      log_freq = log10(Frequency + 1)
+    ),
+  sample = read_csv(cld_path, show_col_types = FALSE) %>%
+    select(char, log_freq, strokes),
+  rlang::abort(glue("Unsupported cld_type '{cfg$cld_type}' in cleaning config."))
+)
 
-                                        # join
-                                        m1 <- merge(agg_rt, agg_acc, by = "char", all.x = TRUE)
-                                        dat <- merge(m1, cld[, c("char","log_freq","strokes")], by = "char", all.x = TRUE)
+filtered_trials <- sclp %>%
+  filter(!keep_correct | correct == 1) %>%
+  filter(between(rt_ms, rt_min, rt_max))
 
-                                        # drop rows missing predictors
-                                        ok <- complete.cases(dat$log_freq) & complete.cases(dat$strokes)
-                                        dat <- dat[ok, ]
+filtered_path <- here("outputs", "data", "trials_filtered.csv")
+write_csv(filtered_trials, filtered_path)
 
-                                        # write
-                                        out_csv <- here::here("outputs","data","processed.csv")
-                                        write.csv(dat, out_csv, row.names = FALSE, fileEncoding = "UTF-8")
-                                        cat(sprintf("Wrote %d rows to %s\n", nrow(dat), out_csv))
+agg_rt <- filtered_trials %>%
+  group_by(char) %>%
+  summarise(mean_log_rt = mean(log(rt_ms)), .groups = "drop")
 
-                                        # Write cleaning summary YAML + histogram
-                                        clean_yaml <- here::here("outputs","results","cleaning.yml")
-                                        total <- nrow(sclp)
-                                        kept  <- nrow(filtered_trials)
-                                        dropd <- total - kept
-                                        lines <- c(
-                                          sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
-                                            'trimming:',
-                                              sprintf('  correct_only: %s', if (correct_only) "true" else "false"),
-                                                sprintf('  rt_min_ms: %s', rt_min),
-                                                  sprintf('  rt_max_ms: %s', rt_max),
-                                                    'counts:',
-                                                      sprintf('  total_trials: %d', total),
-                                                        sprintf('  kept_trials: %d',  kept),
-                                                          sprintf('  dropped_trials: %d', dropd)
-                                                          )
-                                                          cat(paste0(lines, collapse = "\n"), "\n", file = clean_yaml)
+agg_acc <- sclp %>%
+  group_by(char) %>%
+  summarise(acc_rate = mean(correct, na.rm = TRUE), .groups = "drop")
 
-                                                          fig_path <- here::here("outputs","figures","rt_hist.png")
-                                                          png(filename = fig_path, width = 800, height = 500)
-                                                          hist(
-                                                            filtered_trials$rt_ms,
-                                                              breaks = 40,
-                                                                main = sprintf("RT histogram (kept %d/%d trials)", kept, total),
-                                                                  xlab = "RT (ms)",
-                                                                    col = "#4477AA"
-                                                                    )
-                                                                    invisible(dev.off())
+dat <- agg_rt %>%
+  left_join(agg_acc, by = "char") %>%
+  left_join(cld, by = "char") %>%
+  drop_na(log_freq, strokes)
 
-                                                                    cat(sprintf("Wrote %s, %s, and %s\n", out_csv, clean_yaml, fig_path))
-                                                                    
+processed_path <- here("outputs", "data", "processed.csv")
+write_csv(dat, processed_path)
+
+summary_yaml <- here("outputs", "results", "cleaning.yml")
+
+summary_info <- list(
+  timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
+  trimming = list(
+    correct_only = keep_correct,
+    rt_min_ms = rt_min,
+    rt_max_ms = rt_max
+  ),
+  counts = list(
+    total_trials = nrow(sclp),
+    kept_trials = nrow(filtered_trials),
+    dropped_trials = nrow(sclp) - nrow(filtered_trials)
+  )
+)
+
+write_yaml(summary_info, summary_yaml)
+
+hist_plot <- filtered_trials %>%
+  ggplot(aes(x = rt_ms)) +
+  geom_histogram(bins = 40, fill = "#4477AA") +
+  labs(
+    title = glue(
+      "RT histogram (kept {nrow(filtered_trials)}/{nrow(sclp)} trials)"
+    ),
+    x = "RT (ms)",
+    y = "Count"
+  ) +
+  theme_minimal(base_size = 14)
+
+fig_path <- here("outputs", "figures", "rt_hist.png")
+ggsave(fig_path, plot = hist_plot, width = 8, height = 5, dpi = 150)
+
+inform_message <- glue(
+  "Wrote {nrow(dat)} rows to processed data; outputs saved to:\n",
+  "  - {processed_path}\n",
+  "  - {summary_yaml}\n",
+  "  - {fig_path}"
+)
+
+cat(inform_message, "\n")
