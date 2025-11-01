@@ -8,7 +8,7 @@ format:
     pdf-engine: tectonic
   docx: default
   gfm: default
-freeze: true
+freeze: auto
 execute:
   echo: true
 ---
