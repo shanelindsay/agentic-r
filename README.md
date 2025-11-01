@@ -26,16 +26,14 @@ Agents (e.g., Codex/Claude Code/Cursor) behave like new lab members arriving col
    - `outputs/results/metrics.yml` (intercept/slope(s)/R², plus `n_obs` and timestamp)
    - `outputs/reports/analysis.{html,pdf,docx,md}`
 
-### Optional: micromamba wrapper
-
-If you use micromamba:
-
+### Optional: environment wrapper
+If you use the repo’s environment launcher, the Makefile will call `./dev/run-in-env.sh` automatically when present.  
+To run individual steps manually:
 ```bash
-./scripts/run_r.sh R/01_prepare.R
-./scripts/run_r.sh R/02_model.R
+./dev/run-in-env.sh Rscript scripts/01_prepare.R
+./dev/run-in-env.sh Rscript scripts/02_model.R
+./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
 ```
-
-The wrapper runs `Rscript` inside a named environment.
 
 ## Data 
 
@@ -48,8 +46,8 @@ See the licences, and fetch locations: `docs/data-sources.md`.
 ## How it works
 
 * `configs/cleaning.yml`: shared parameters for trimming + file sources (full SCLP + CLD).
-* `R/01_prepare.R`: applies trimming once, writes `outputs/data/trials_filtered.csv`, aggregates to per-character `outputs/data/processed.csv`, and emits cleaning summary + histogram.
-* `R/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
+* `scripts/01_prepare.R`: applies trimming once, writes `outputs/data/trials_filtered.csv`, aggregates to per-character `outputs/data/processed.csv`, and emits cleaning summary + histogram.
+* `scripts/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
 * `reports/analysis.qmd`: reads YAML and figure, renders to `outputs/reports/`.
 
 

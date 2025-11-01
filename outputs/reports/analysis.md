@@ -34,7 +34,7 @@ This report reads pre-computed outputs from the simple demo pipeline.
 
 ## Cleaning Summary
 
-The pipeline kept 276025 of 376101 trials (dropped 100076). Settings:
+The pipeline kept 137133 of 235016 trials (dropped 97883). Settings:
 correct-only = TRUE, RT range = 200–2000 ms.
 
 ``` r
@@ -55,15 +55,54 @@ data.frame(
     1   correct_only   TRUE
     2      rt_min_ms    200
     3      rt_max_ms   2000
-    4   total_trials 376101
-    5    kept_trials 276025
-    6 dropped_trials 100076
+    4   total_trials 235016
+    5    kept_trials 137133
+    6 dropped_trials  97883
+
+## RT Histogram (kept trials)
+
+``` r
+knitr::include_graphics(fig_path)
+```
+
+![](../outputs/figures/rt_hist.png)
 
 ## Model Metrics
 
 Model: lm(mean_log_rt ~ log_freq + strokes) (N = 3852)
 
 R² = 0.434.
+
+``` r
+if (!is.null(metrics$adj_r2)) {
+  cat(paste0("Adjusted R² = ", fmt3(as.numeric(metrics$adj_r2)), ".\n\n"))
+}
+```
+
+    Adjusted R² = 0.433.
+
+``` r
+if (!is.null(metrics$sigma)) {
+  cat(paste0("Residual sigma = ", fmt3(as.numeric(metrics$sigma)), ".\n\n"))
+}
+```
+
+    Residual sigma = 0.099.
+
+``` r
+if (!is.null(metrics$aic) || !is.null(metrics$bic)) {
+  cat("Information criteria:\n\n")
+  aic_val <- if (!is.null(metrics$aic)) fmt3(as.numeric(metrics$aic)) else "NA"
+  bic_val <- if (!is.null(metrics$bic)) fmt3(as.numeric(metrics$bic)) else "NA"
+  print(data.frame(metric = c("AIC", "BIC"), value = c(aic_val, bic_val)))
+}
+```
+
+    Information criteria:
+
+      metric     value
+    1    AIC -6851.160
+    2    BIC -6826.134
 
 Coefficients:
 
@@ -82,11 +121,3 @@ data.frame(
     1 intercept  6.452355
     2  log_freq -0.070823
     3   strokes  0.013355
-
-## RT Histogram (kept trials)
-
-``` r
-knitr::include_graphics(fig_path)
-```
-
-![](../outputs/figures/rt_hist.png)
