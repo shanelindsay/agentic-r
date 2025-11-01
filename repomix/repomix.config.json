@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/yamadashy/repomix/main/packages/config-schema/src/schema.json",
+  "output": {
+    "filePath": "repomix/repomix-context.xml",
+    "style": "xml",
+    "compress": false
+  },
+  "include": [
+    "slides-new/**",
+    "talk/outline.md",
+    "talk/talk-outline-only.md"
+  ],
+  "ignore": {
+    "customPatterns": [
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.venv/**",
+      "**/venv/**",
+      "**/*.min.*"
+    ]
+  }
+}
