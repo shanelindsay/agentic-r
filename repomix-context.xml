@@ -33,7 +33,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: AGENTS.md, README.md, Makefile, R/**/*.R, scripts/**/*.R, scripts/**/*.sh, dev/**/*.sh, slides/**/*.qmd, slides/**/*.pptx, talk/**/*.md, talk/**/*.potx, env/**/*, manuscript/**/*.qmd, reports/**/*.qmd, skills/scientific-thinking/SCHEMA.md
+- Only files matching these patterns are included: AGENTS.md, README.md, Makefile, R/**/*.R, scripts/**/*.R, scripts/**/*.sh, dev/**/*.sh, slides/**/*.qmd, slides/**/*.pptx, talk/**/*.md, talk/**/*.potx, env/**/*, configs/**/*.yml, configs/**/*.yaml, reports/**/*.qmd, skills/scientific-thinking/SCHEMA.md
 - Files matching these patterns are excluded: **/data/**, **/outputs/**, **/.git/**, **/node_modules/**, **/.venv/**, **/venv/**, **/.mamba/**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
@@ -44,11 +44,13 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
+configs/
+  cleaning.yml
 dev/
   run-in-env.sh
-env/
-  STACK
-R/
+reports/
+  analysis.qmd
+scripts/
   01_prepare.R
   02_model.R
 slides/
@@ -269,82 +271,6 @@ if [[ -x "${ENV_PATH}/bin/R" ]]; then export QUARTO_R="${ENV_PATH}/bin/R"; fi
 
 echo "Running in '${ENV_NAME}' at ${ENV_PATH}"
 exec micromamba run -p "${ENV_PATH}" "$@"
-</file>
-
-<file path="env/STACK">
-core
-</file>
-
-<file path="R/01_prepare.R">
-# R/01_prepare.R
-# Read trial-level SCLP slice + CLD predictors; aggregate and join.
-# Input:  data/raw/sclp_sample.csv (columns: char, rt_ms, correct)
-#         data/raw/cld_sample.csv  (columns: char, log_freq, strokes)
-# Output: data/processed/merged.csv
-
-opts <- options(stringsAsFactors = FALSE)
-dir.create("data/processed", showWarnings = FALSE, recursive = TRUE)
-
-sclp <- read.csv("data/raw/sclp_sample.csv", fileEncoding = "UTF-8")
-cld  <- read.csv("data/raw/cld_sample.csv",  fileEncoding = "UTF-8")
-
-# Basic sanity
-stopifnot(all(c("char","rt_ms","correct") %in% names(sclp)))
-stopifnot(all(c("char","log_freq","strokes") %in% names(cld)))
-
-# Trim and aggregate (keep correct, 200–2000 ms)
-keep <- sclp$correct == 1 & sclp$rt_ms >= 200 & sclp$rt_ms <= 2000
-sclp2 <- sclp[keep, c("char","rt_ms")]
-
-# mean of log RT per character
-agg_rt <- aggregate(rt_ms ~ char, data = sclp2, FUN = function(x) mean(log(x)))
-names(agg_rt)[2] <- "mean_log_rt"
-
-# accuracy per character from ALL trials (not just keep)
-agg_acc <- aggregate(correct ~ char, data = sclp[, c("char","correct")], FUN = mean)
-names(agg_acc)[2] <- "acc_rate"
-
-# join
-m1 <- merge(agg_rt, agg_acc, by = "char", all.x = TRUE)
-dat <- merge(m1, cld[, c("char","log_freq","strokes")], by = "char", all.x = TRUE)
-
-# drop rows missing predictors
-ok <- complete.cases(dat$log_freq) & complete.cases(dat$strokes)
-dat <- dat[ok, ]
-
-# write
-write.csv(dat, "data/processed/merged.csv", row.names = FALSE, fileEncoding = "UTF-8")
-cat(sprintf("Wrote %d rows to data/processed/merged.csv\n", nrow(dat)))
-</file>
-
-<file path="R/02_model.R">
-# R/02_model.R
-# Fit a tiny model and write a diffable YAML with key metrics.
-
-dir.create("results", showWarnings = FALSE, recursive = TRUE)
-d <- read.csv("data/processed/merged.csv", fileEncoding = "UTF-8")
-
-stopifnot(all(c("mean_log_rt","log_freq","strokes") %in% names(d)))
-mod <- lm(mean_log_rt ~ log_freq + strokes, data = d)
-s   <- summary(mod)
-
-co <- coef(mod)
-r2 <- s$r.squared
-n  <- nrow(d)
-
-out <- "results/metrics.yml"
-lines <- c(
-  sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
-  'model: lm(mean_log_rt ~ log_freq + strokes)',
-  sprintf('n: %d', n),
-  'coefficients:',
-  sprintf('  intercept: %.6f', unname(co[1])),
-  sprintf('  log_freq: %.6f', unname(co["log_freq"])),
-  sprintf('  strokes: %.6f',  unname(co["strokes"])),
-  sprintf('r2: %.6f', r2)
-)
-cat(paste0(lines, collapse = "\n"), "\n", file = out)
-cat(sprintf("Wrote %s\n", out))
 </file>
 
 <file path="slides/agentic-ai-concrete.qmd">
@@ -1051,290 +977,238 @@ Timing: 29:00–40:00. Keep a slide visible with repo URL and a QR code placehol
 ```
 </file>
 
-<file path="AGENTS.md">
-# Agents Guide
-
-This document defines how agents work in this repo. It is **policy**: follow it unless a task explicitly says otherwise. Goals: clarity, reproducibility, auditable steps.
-
-## 1) Context
-
-* User: 
-* Work: 
-* Priorities: reproducibility, clarity, well documented workflows.
-* Default approach: prefer simple, auditable steps over clever automation.
-
-## 2) Canonical Workflow & Repository Roles
-
-**Single source of truth for compute:** `{targets}` in `_targets.R` and modular functions in `R/`.
-**Reports (QMD):** present/diagnose results; they do not own heavy computation.
-
-**Directory contract**
-
-- `R/` -> reusable functions only; no side effects on import; no top-level I/O.
-- `_targets.R` -> complete pipeline graph and parameters; reproducible + deterministic.
-- `scripts/` -> orchestration, CLI entrypoints, Slurm wrappers, diagnostics helpers (tiny, no heavy compute).
-- `reports/` -> Quarto "views" that **read** pipeline outputs (QC, diagnostics, inference stubs).
-- `archive/legacy-qmd/` -> historical stage-by-stage QMDs. **Do not add new numbered QMDs here.**
-- `outputs/` -> all rendered artefacts (figures, tables, md/html from reports).
-
-**Non-negotiables**
-1. Do not add new compute into QMDs. If a report needs data that doesn't exist, add a target + function.
-2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
-3. Prefer plain-text, diffable artefacts (CSV/MD/YAML) in `outputs/`.
-4. Use `here::here()` for all paths; no relative "../" or `getwd()` assumptions.
-
-### 2.1 General rules
-
-* Cloud: expect containerised tools and fixed resources. Long jobs may time out.
-* Laptop: respect limited resources and mixed OS quirks (Windows or Linux).
-* HPC: use batch schedulers, handle larger data and high memory workloads.
-* Parallel agents may be running locally and in the cloud. Sync often and separate concerns.
-
-### 2.2 Environment wrapper (mandatory)
-
-* Always execute R and Quarto via `./dev/run-in-env.sh`.
-* Shared environment families: `r-core` (analysis, targets, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
-* Use per-project R packages via `R_LIBS_USER=$PWD/.rlib`.
-
-**Quickstart**
-
-```bash
-# Run an R script
-./dev/run-in-env.sh Rscript scripts/01_data_processing.R
-
-# Render a Quarto document
-./dev/run-in-env.sh quarto render manuscript/manuscript.qmd
-
-# Start an interactive R session
-./dev/run-in-env.sh R
-
-```
-
-### 2.3 HPC: cluster jobs
-
-* Full run guide: `docs/hpc.md` covers Viper context vars, array templates, log locations, and troubleshooting.
-* Harvest array status: `make harvest-status` which writes `outputs/status/status.csv`.
-* Submit arrays with notify: `dev/submit_array.sh --array 1-20 -- dev/slurm/test_slurm.slurm`.
-* Dashboards: `watch -n 10 ~/bin/cluster-dash.sh`.
-* Diagnostics templates live in `dev/slurm/` (array template: `dev/slurm/array_template.slurm`).
-* Pipeline QA: follow `README.md` ("Hardening & validation checklist") -- `make check-env` -> `make targets-exp2 SURR_N=0` -> `make targets-exp1` -> `make validate` -> `make harvest-status`.
-* Avoid inline `R -e` commands through multiple shell layers (quoting breaks in Slurm). Prefer `sbatch dev/slurm/run_targets.sbatch` or a tiny script instead of passing `-e` via wrappers.
-* Lightweight prep is fine on the login node, but run anything long or interactive through Slurm (`sbatch` or `interactive`). When an interactive shell is required, ask Shane to launch a new agent inside that session after authentication.
-
-
-## 3) Git & PR Workflow (Atomic + Frequent)
-
-We use GitHub for code, manuscript preparation, and project management. When you hear "issue" - assume github issue (and interact with gh CLI - you have token to access).
-
-### 3.1 Branching and commits
-
-* Work on `main`, DO NOT USE worktree or switch branches for new tasks. You can suggest it when you think it is a good idea but you should get approval.
-* Be clear which branch you are working on. Pull regularly so `main` stays synced.
-* Commit small, logical changes frequently. After progress, commit and push or pull frequently.
-* Keep the working tree tidy. Avoid untracked files - assume as default files should be tracked. If in doubt about tracking, ask.
-* Track **generated outputs under `outputs/`** (CSV, MD, HTML, PNG, etc.) so reviewers see what changed. **Do NOT** track rendered artefacts under `reports/` (see `.gitignore`); QMDs must write to `outputs/`.
-* Do not delete generated files in `outputs/` unless explicitly requested or they're superseded by a rename in the same PR (call this out in the PR body).
-
-## Atomic Commits and Git management
-
-We operate on the principle of **atomic commits**.
-
-We normally use GitHub Issues to coordinate.
-
-We may have multiple agents working in parallel, and users working on different machines.
-
----
-
-# Commit Rules
-
-- **Keep commits frequent** - keep the remote up to date as much as possible.
-- **Reference Issues** in commit titles if you are working on an issue (e.g., `fix: handle null IDs #123`).
-- **Keep commits atomic** - commit only the files you touched and list each path explicitly.
-  `git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
-  For brand-new files, use:
-  `git restore --staged :/ && git add "path/to/file1" "path/to/file2" && git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
-- **Always double-check** `git status` before any commit.
-- **Delete unused or obsolete files** when your changes make them irrelevant (e.g., refactors, feature removals).
-  Revert files only when the change is yours or explicitly requested.
-- **Coordinate with other agents** before removing their in-progress edits. Assume any edits you encounter have a purpose.
-  Do not revert or delete work you did not author unless everyone agrees.
-- **Never use** `git restore` (or similar commands) to revert files you did not author.
-  Coordinate with other agents so their in-progress work stays intact.
-- **ABSOLUTELY NEVER** run destructive Git operations (e.g., `git reset --hard`, `rm`, `git checkout` / `git restore` to an older commit) unless the user gives explicit written instruction in this conversation.
-  Treat these commands as catastrophic; if you are even slightly unsure, stop and ask before touching them.
-- **Before deleting a file to resolve a local failure, stop and ask the user.**
-  Other agents are often editing adjacent files; deleting their work to silence an error is never acceptable without explicit approval.
-- **Never amend commits** unless you have explicit written approval in the task thread.
-- **Moving, renaming, and restoring files** is allowed.
-- **Quote paths containing brackets or parentheses** (e.g., `src/app/[candidate]/**`) when staging or committing so the shell does not treat them as globs or subshells.
-- **When running `git rebase`**, avoid opening editors:
-  export `GIT_EDITOR=:` and `GIT_SEQUENCE_EDITOR=:` (or pass `--no-edit`) so default messages are used automatically.
-
-### 3.2 Code review and approval
-
-* We do not use CI in these workflows.
-* Use Pull Requests for review with Shane. You can ask for reviews on commits.
-* Reference the driving issue in the PR description. Include a closing keyword, for example `Closes #123`.
-
-## 4) Issue-Driven Project Management
-
-Single source of truth: GitHub Issues drive all work. PRs link back to their issue. Discussion stays in the issue.
-
-### 4.1 Issue hygiene and planning
-
-* Use the documented labels and naming conventions.
-* Group related work under epics. Use parent plus child issue links.
-* When starting work, assign yourself and add a short plan.
-* Post progress updates directly to the relevant issue so parallel agents and collaborators stay aligned.
-* For out-of-scope work, suggest additional issues.
-* Keep implementation details in the PR. Keep the issue high level.
-* Every PR body must include `Closes #<issue-number>` when working from an issue where appropriate.
-
-**CLI helpers**
-
-* Sub-issues: `gh sub-issue create --parent 123 --title "Implement user authentication"`.
-
-### 4.2 Labels and fields
-
-Use orthogonal labels.
-
-* Type: `type:pm`, `type:docs`, `type:workflow`, `type:analysis`, `type:infra`, `type:writing`, `type:decision`.
-* Agentability: `role:agent`, `role:agent+qc` which means agent executes and human checks, `role:human`.
-* Run context: `run:flexible` which means local or cloud is fine, HPC possible, `run:hpc-only`.
-* Size: `size:xs`, `size:s`, `size:m`, `size:l`, `size:xl` which is an epic.
-* Priority: `priority:P0`, `priority:P1`, `priority:P2` (optional).
-* Status: `status:blocked`, `status:ready`, `status:in-progress`, `status:review-needed`, `status:done`.
-
-**Size calibration**
-
-* XS which is a one touch change: trivial tweak in a single file, no design. No new branch or worktree is needed.
-* S which is a straightforward change: a few files, clear acceptance criteria, no cross domain coordination. Suitable for a single agent end to end.
-* M which is a more complex and lengthy change: multiple files, long running tasks, human quality checks recommended.
-* L which is a co-ordinated change: cross domain work where sequencing matters. Usually split into 2 to 5 S or M children. The parent tracks coordination only.
-* XL which is an epic umbrella: never implement directly. Tracks a theme or outcome across many issues.
-
-Keep a single issue with a checklist when items are small verifications under one assignee and one PR.
-
-Split into sub-issues when any are true:
-
-* Multiple assignees or handoffs which means agent to human quality checks.
-* Independent scheduling where some parts can land earlier.
-
-### 4.3 Working on issues and PRs
-
-* When starting, mark `status:in-progress` on the issue. Update as needed.
-* Regularly update the issue with comments as progress is made.
-* Draft PRs are recommended.
-
-## 5) Repository Map
-
-* `data/` -- raw and processed experimental data
-  * `raw/` -- raw data
-  * `processed/` -- cleaned, analysis-ready datasets
-* `scripts/` -- orchestration + CLI (no heavy compute). Includes:
-  * `run_targets_*.R` launchers, `tools/`, `tests/`, and Slurm wrappers under `slurm/`.
-* `reports/` -- Quarto "views" that consume outputs (`qc_group.qmd`, `qc_subject.qmd`, `input_qc.qmd`, `inference/m4_cluster_inference.qmd`).
-* `archive/legacy-qmd/` -- archived numbered QMDs (`0x_*`). Kept for historical reference only.
-* `outputs/` -- all rendered artefacts from pipeline and reports (figures, tables, reports markdown/html).
-* `docs/` -- project documentation and reference materials.
-* `manuscript/` -- publication documents. No heavy computation. Consumes prepared outputs.
-  * `submission/` -- frozen outputs for journal handoff.
-* `deliverables/` -- external-facing materials such as talks, conferences, media.
-* `dev/` -- development guides, documentation, and environment tools.
-
-## 6) Turn-Based Execution for Agents
-
-* Hard limit: actions only occur during the agent's active turn. Between turns, the agent cannot poll Slurm, tail logs, read notifications, or schedule timers.
-* No background promises: do not claim ongoing monitoring. Use conditional phrasing for future work, for example "On your reply, I can ...".
-* Do not ask Shane to run commands or submit jobs. The agent runs commands and submits jobs.
-* After any submission or long run, state where outputs or logs will appear, for example `outputs/logs/<job>-<JOBID>.{out,err}`. Suggest sensible next step options for the next turn, such as a status check, a short log tail and summary, or a targeted validation. If the next step is clear, continue with the task.
-
-## 7) Development Workflow
-
-Because agents are involved, prefer text-based, diffable artefacts--**and keep compute in the pipeline**.
-
-### 7.1 WRI cycle
-
-1. **Write**: pipeline code in `R/` + targets in `_targets.R`; report code in `reports/*.qmd`.
-2. **Run**: build with `{targets}`; render QMD **to `outputs/reports/...`**.
-3. **Inspect**: review rendered MD/HTML in `outputs/...`.
-4. **Iterate**: refine; commit both code and updated `outputs/`.
-
-### 7.2 Principles for documents and code
-
-* Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in a publication-ready format via apaquarto. It consumes figures and tables generated earlier.
-* The data processing and analysis pipeline should be simple and reproducible and shareable on OSF.
-* Readers care about the finished result. Avoid historical comments unless they aid understanding.
-* Do not create ad hoc `v2` files. Use GitHub for versioning.
-* Use Makefiles where helpful to automate the pipeline.
-* QMDs are **views** and logs; heavy compute belongs in targets + `R/`.
-* Do not mix computation and interpretation. Interpretive prose is based on QMD outputs and numbers can be inlined when needed.
-* YAML side outputs generated mid pipeline may be read by `manuscript.qmd`. Prefer YAML over `.rds` for plain text diffability.
-* Heavy R objects, for example Bayesian mixed models, can be saved as `.rds`.
-* Exploratory reports are outside the core reproducible pipeline.
-* Quarto defaults: `freeze: true`, `echo: true`. See freeze policy below.
-* Prepare final tables and themed figures at the end of the pipeline and consume them in `manuscript.qmd`. No computation (except potentially minor formatting) should occur in `manuscript.qmd`.
-
-### 7.3 Path management
-
-* Use `here()` for all file paths. Add a `.here` file if needed.
-
-### 7.4 Tests
-
-* QMDs must render.
-* Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown.
-* Add other tests as necessary.
-
-### 7.5 Quarto freeze policy
-
-Quarto writes cached renders into `_freeze/` directories adjacent to each QMD (e.g., `outputs/reports/exp1/_freeze/06_exp1_report/`); these directories are ignored by Git but must remain in place for deterministic rebuilds.
-
-* Production/stable runs: prefer `freeze: true` for exact outputs and deterministic rebuilds.
-* Local development: use the `local` profile (`configs/profiles/local.yaml`) with `reports: { freeze: auto }` to re-render only changed chunks.
-* Before tagging outputs, restore `freeze: true` (or remove the local profile) and confirm the corresponding `_freeze/` directories are populated.
-
-### 7.6 Core implementation principles
-
-* Fail fast and surface errors early.
-* Do not use defensive programming such as conditional fallbacks for missing data.
-* No workarounds or fallbacks. Fix root causes.
-* Assume a deterministic pipeline. If data is missing, fix upstream.
-* Keep the file system organised. Use `scratch/` or `tmp/` for temporary work.
-* Keep debugging work separate or avoid committing it once fixed.
-* Implement the simplest solution that works. Avoid over engineering.
-* Prioritise clarity and explainability over performance or terseness. Assume the code will be shared and avoid obvious comments.
-* Avoid unnecessary intermediate data structures.
-
-### 7.7 Long running tooling and stuck runs
-
-* Long running tooling such as tests, docker compose, or migrations must always be invoked with sensible timeouts or in non interactive batch mode. Never leave a shell command waiting indefinitely. Prefer explicit timeouts, scripted runs, or log polling after the command exits.
-* If a Codex run is too long or stuck on tool calling, apply the same rule. Use non interactive batch, explicit timeouts, or exit and resume with log inspection.
-
-
-### 7.9 Definition of Done (checklists)
-
-**Pipeline change (R/ + targets)**
- - [ ] New/changed targets documented in `_targets.R` comments.
- - [ ] Determinism: seeds/plans set; no silent randomness.
- - [ ] Outputs land under `outputs/{data,results,figures,tables}`.
- - [ ] `README`/docs updated where paths or user steps changed.
-
-**Report change (reports/*.qmd)**
- - [ ] Reads from outputs only; no heavy compute.
- - [ ] `freeze` set appropriately; renders to `outputs/reports/...`.
- - [ ] Example render command added to `reports/README.md`.
-
-### 7.10 Policy Checks (to automate later)
-
-* Fail if any `reports/**/*.qmd` sets `output-dir` inside `reports/`.
-* Warn if any new file under `scripts/**` is a `.qmd`.
-* Warn if new symbols start with `m4_`.
-* Warn if relative "../" paths appear outside `archive/`.
-
-## 8) Finalising
-
-* Merge the PR to close the linked issue automatically when possible.
-* After merge, confirm the repository is clean and documentation is up to date.t
+<file path="scripts/01_prepare.R">
+## scripts/01_prepare.R
+## Read trial-level SCLP slice + CLD predictors; aggregate and join.
+## Input:  SCLP trials (full or sample) and CLD (full or sample)
+## Output: outputs/data/processed.csv (+ filtered trials, YAML, figure)
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(readr)
+  library(purrr)
+  library(tidyr)
+  library(ggplot2)
+  library(glue)
+  library(yaml)
+  library(fs)
+  library(here)
+  library(tools)
+})
+
+walk(c("outputs/data", "outputs/results", "outputs/figures"), ~fs::dir_create(here(.x)))
+
+cfg_path <- here("configs", "cleaning.yml")
+if (!file.exists(cfg_path)) stop("Missing configs/cleaning.yml at: ", cfg_path)
+cfg <- yaml::read_yaml(cfg_path)
+
+keep_correct <- isTRUE(cfg$correct_only)
+rt_min <- as.numeric(cfg$rt_min_ms)
+rt_max <- as.numeric(cfg$rt_max_ms)
+if (!is.finite(rt_min) || !is.finite(rt_max) || !(rt_min < rt_max)) {
+  stop("Bad RT bounds in configs/cleaning.yml: rt_min_ms=", rt_min, " rt_max_ms=", rt_max)
+}
+
+raw_trials_path <- here(cfg$raw_trials)
+cld_path <- here(cfg$cld_file)
+if (!file.exists(raw_trials_path)) stop("Missing SCLP trials at: ", raw_trials_path)
+if (!file.exists(cld_path))       stop("Missing CLD file at: ", cld_path)
+
+# --- Load SCLP trials (support 'sclp_full' and 'sample') ---
+sclp_raw <- readr::read_csv(raw_trials_path, show_col_types = FALSE)
+if (identical(cfg$raw_type, "sclp_full")) {
+  # Expect columns: item, lexicality, accuracy, rt
+  needed <- c("item", "lexicality", "accuracy", "rt")
+  if (!all(needed %in% names(sclp_raw))) {
+    stop("SCLP full file missing columns: ", paste(setdiff(needed, names(sclp_raw)), collapse = ", "))
+  }
+  sclp_raw <- dplyr::filter(sclp_raw, lexicality == "character")
+  sclp <- dplyr::transmute(sclp_raw, char = item, rt_ms = rt, correct = accuracy)
+} else if (identical(cfg$raw_type, "sample")) {
+  if (!all(c("char", "rt_ms", "correct") %in% names(sclp_raw))) {
+    stop("Sample SCLP must have columns: char, rt_ms, correct")
+  }
+  sclp <- dplyr::select(sclp_raw, char, rt_ms, correct)
+} else {
+  stop("Unknown raw_type in configs/cleaning.yml: ", cfg$raw_type)
+}
+
+# Enforce types and single-character rows
+sclp <- sclp %>%
+  mutate(
+    char = as.character(char),
+    rt_ms = suppressWarnings(as.numeric(rt_ms)),
+    correct = suppressWarnings(as.numeric(correct))
+  ) %>%
+  filter(nchar(char) == 1L)
+
+# --- Load CLD (support 'full' and 'sample') ---
+ext <- tolower(tools::file_ext(cld_path))
+if (ext %in% c("tsv", "txt")) {
+  first_line <- readr::read_lines(cld_path, n_max = 1)
+  use_tab <- length(first_line) && grepl("\t", first_line)
+  cld_raw <- if (use_tab) {
+    readr::read_delim(cld_path, delim = "\t", show_col_types = FALSE)
+  } else {
+    readr::read_csv(cld_path, show_col_types = FALSE)
+  }
+} else {
+  cld_raw <- readr::read_csv(cld_path, show_col_types = FALSE)
+}
+
+if (identical(cfg$cld_type, "full")) {
+  needed <- c("Word", "Length", "Strokes", "Frequency")
+  if (!all(needed %in% names(cld_raw))) {
+    stop("CLD full file missing columns: ", paste(setdiff(needed, names(cld_raw)), collapse = ", "))
+  }
+  cld <- cld_raw %>%
+    filter(Length == 1) %>%
+    transmute(
+      char = as.character(Word),
+      strokes = as.numeric(Strokes),
+      log_freq = log10(pmax(as.numeric(Frequency), 0) + 1)
+    )
+} else if (identical(cfg$cld_type, "sample")) {
+  if (!all(c("char", "log_freq", "strokes") %in% names(cld_raw))) {
+    stop("Sample CLD must have columns: char, log_freq, strokes")
+  }
+  cld <- cld_raw %>%
+    transmute(
+      char = as.character(char),
+      log_freq = as.numeric(log_freq),
+      strokes  = as.numeric(strokes)
+    )
+} else {
+  stop("Unknown cld_type in configs/cleaning.yml: ", cfg$cld_type)
+}
+
+# --- Trim and aggregate ---
+filtered_trials <- sclp %>%
+  filter(!is.na(rt_ms)) %>%
+  filter(rt_ms >= rt_min, rt_ms <= rt_max) %>%
+  { if (keep_correct) filter(., !is.na(correct) & correct == 1) else . }
+
+# Atomic write helper
+write_csv_atomic <- function(df, path) {
+  tmp <- paste0(path, ".tmp")
+  readr::write_csv(df, tmp)
+  fs::file_move(tmp, path)
+}
+
+# Persist filtered trials
+filtered_path <- here("outputs", "data", "trials_filtered.csv")
+write_csv_atomic(filtered_trials, filtered_path)
+
+# mean(log RT) per character
+agg_rt <- filtered_trials %>%
+  group_by(char) %>%
+  summarise(mean_log_rt = mean(log(rt_ms)), .groups = "drop")
+
+# accuracy per character from character trials (pre-trim RT)
+agg_acc <- sclp %>%
+  group_by(char) %>%
+  summarise(acc_rate = mean(correct, na.rm = TRUE), .groups = "drop")
+
+# join, requiring predictors
+dat <- agg_rt %>%
+  left_join(agg_acc, by = "char") %>%
+  inner_join(cld, by = "char") %>%
+  drop_na(log_freq, strokes)
+
+processed_path <- here("outputs", "data", "processed.csv")
+write_csv_atomic(dat, processed_path)
+
+# Cleaning summary YAML (atomic)
+summary_yaml <- here("outputs", "results", "cleaning.yml")
+summary_info <- list(
+  timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
+  trimming = list(
+    correct_only = keep_correct,
+    rt_min_ms = rt_min,
+    rt_max_ms = rt_max
+  ),
+  counts = list(
+    total_trials = nrow(sclp),
+    kept_trials = nrow(filtered_trials),
+    dropped_trials = nrow(sclp) - nrow(filtered_trials)
+  )
+)
+tmp_yaml <- paste0(summary_yaml, ".tmp")
+yaml::write_yaml(summary_info, tmp_yaml)
+fs::file_move(tmp_yaml, summary_yaml)
+
+# RT histogram (kept trials)
+hist_plot <- filtered_trials %>%
+  ggplot(aes(x = rt_ms)) +
+  geom_histogram(bins = 40, fill = "#4477AA") +
+  labs(
+    title = glue("RT histogram (kept {nrow(filtered_trials)}/{nrow(sclp)} trials)"),
+    x = "RT (ms)",
+    y = "Count"
+  ) +
+  theme_minimal(base_size = 14)
+fig_path <- here("outputs", "figures", "rt_hist.png")
+ggsave(fig_path, plot = hist_plot, width = 8, height = 5, dpi = 150)
+
+cat(glue(
+  "Wrote {nrow(dat)} rows to processed data; outputs saved to:\n",
+  "  - {processed_path}\n",
+  "  - {summary_yaml}\n",
+  "  - {fig_path}\n"
+))
+</file>
+
+<file path="scripts/02_model.R">
+## scripts/02_model.R
+## Fit a small model and write a diffable YAML with key metrics.
+## Input:  outputs/data/processed.csv
+## Output: outputs/results/metrics.yml
+
+suppressPackageStartupMessages({
+  library(readr)
+  library(here)
+})
+
+dir.create(here::here("outputs","results"), showWarnings = FALSE, recursive = TRUE)
+d <- readr::read_csv(here::here("outputs","data","processed.csv"), show_col_types = FALSE)
+
+needed <- c("mean_log_rt","log_freq","strokes")
+if (!all(needed %in% names(d))) {
+  stop("Processed data missing required columns: ", paste(setdiff(needed, names(d)), collapse = ", "))
+}
+
+mod <- lm(mean_log_rt ~ log_freq + strokes, data = d)
+s   <- summary(mod)
+
+co    <- coef(mod)
+r2    <- unname(s$r.squared)
+adjr2 <- unname(s$adj.r.squared)
+sigma <- unname(s$sigma)
+aic   <- AIC(mod)
+bic   <- BIC(mod)
+n     <- nrow(d)
+
+out <- here::here("outputs","results","metrics.yml")
+lines <- c(
+  sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
+  'model: lm(mean_log_rt ~ log_freq + strokes)',
+  sprintf('n_obs: %d', n),
+  'coefficients:',
+  sprintf('  intercept: %.6f', unname(co[1])),
+  sprintf('  log_freq: %.6f', unname(co["log_freq"])),
+  sprintf('  strokes: %.6f',  unname(co["strokes"])),
+  sprintf('r2: %.6f', r2),
+  sprintf('adj_r2: %.6f', adjr2),
+  sprintf('sigma: %.6f', sigma),
+  sprintf('aic: %.6f', aic),
+  sprintf('bic: %.6f', bic)
+)
+tmp <- paste0(out, ".tmp")
+cat(paste0(lines, collapse = "\n"), "\n", file = tmp)
+if (!file.rename(tmp, out)) {
+  stop("Failed to move temporary metrics YAML into place.")
+}
+cat(sprintf("Wrote %s\n", out))
 </file>
 
 <file path="slides/agentic-ai.qmd">
@@ -1602,63 +1476,349 @@ Timing: 29:00-40:00. Keep a slide visible with repo URL and a QR code placeholde
 ![Repo URL / QR code placeholder (non-generative)](placeholder.png)
 </file>
 
+<file path="configs/cleaning.yml">
+correct_only: true
+rt_min_ms: 200
+rt_max_ms: 2000
+
+# Data sources 
+raw_trials: data/raw/SCLP_full_TrialsSCLP.csv
+raw_type: sclp_full   # one of: sclp_full, sample
+cld_file: data/raw/chineselexicaldatabase2.1.txt
+cld_type: full        # one of: full, sample
+</file>
+
+<file path="reports/analysis.qmd">
+---
+title: "Agentic AI Demo Report"
+format:
+  html:
+    toc: true
+  pdf:
+    toc: true
+    pdf-engine: tectonic
+  docx: default
+  gfm: default
+freeze: true
+execute:
+  echo: true
+---
+
+```{r}
+#| label: setup
+#| message: false
+library(yaml)
+
+metrics_path <- here::here("outputs","results","metrics.yml")
+cleaning_path <- here::here("outputs","results","cleaning.yml")
+fig_path <- here::here("outputs","figures","rt_hist.png")
+
+stopifnot(file.exists(metrics_path))
+stopifnot(file.exists(cleaning_path))
+stopifnot(file.exists(fig_path))
+
+metrics <- yaml::read_yaml(metrics_path)
+cleaning <- yaml::read_yaml(cleaning_path)
+
+stopifnot(!is.null(metrics$n_obs))
+N <- as.integer(metrics$n_obs)
+stopifnot(!is.na(N))
+
+# helpers for formatting
+fmt3 <- function(x) sprintf("%.3f", x)
+fmt6 <- function(x) sprintf("%.6f", x)
+```
+
+## Overview
+
+This report reads pre-computed outputs from the simple demo pipeline.
+
+- Processed data: `outputs/data/processed.csv`
+- Cleaning summary: `outputs/results/cleaning.yml`
+- Model metrics: `outputs/results/metrics.yml`
+
+## Cleaning Summary
+
+The pipeline kept `r cleaning$counts$kept_trials` of `r cleaning$counts$total_trials` trials (dropped `r cleaning$counts$dropped_trials`).
+Settings: correct-only = `r cleaning$trimming$correct_only`, RT range = `r cleaning$trimming$rt_min_ms`–`r cleaning$trimming$rt_max_ms` ms.
+
+```{r}
+data.frame(
+  setting = c("correct_only","rt_min_ms","rt_max_ms","total_trials","kept_trials","dropped_trials"),
+  value = c(
+    as.character(cleaning$trimming$correct_only),
+    cleaning$trimming$rt_min_ms,
+    cleaning$trimming$rt_max_ms,
+    cleaning$counts$total_trials,
+    cleaning$counts$kept_trials,
+    cleaning$counts$dropped_trials
+  )
+)
+
+```
+## RT Histogram (kept trials)
+
+```{r}
+knitr::include_graphics(fig_path)
+```
+
+## Model Metrics
+
+Model: `r metrics$model`  (N = `r N`)
+
+R² = `r fmt3(as.numeric(metrics$r2))`.
+
+```{r}
+#| label: optional-metrics
+if (!is.null(metrics$adj_r2)) {
+  cat(paste0("Adjusted R² = ", fmt3(as.numeric(metrics$adj_r2)), ".\n\n"))
+}
+if (!is.null(metrics$sigma)) {
+  cat(paste0("Residual sigma = ", fmt3(as.numeric(metrics$sigma)), ".\n\n"))
+}
+if (!is.null(metrics$aic) || !is.null(metrics$bic)) {
+  cat("Information criteria:\n\n")
+  aic_val <- if (!is.null(metrics$aic)) fmt3(as.numeric(metrics$aic)) else "NA"
+  bic_val <- if (!is.null(metrics$bic)) fmt3(as.numeric(metrics$bic)) else "NA"
+  print(data.frame(metric = c("AIC", "BIC"), value = c(aic_val, bic_val)))
+}
+```
+
+Coefficients:
+
+```{r}
+data.frame(
+  term = c("intercept","log_freq","strokes"),
+  estimate = c(
+    fmt6(as.numeric(metrics$coefficients$intercept)),
+    fmt6(as.numeric(metrics$coefficients$log_freq)),
+    fmt6(as.numeric(metrics$coefficients$strokes))
+  )
+)
+```
+</file>
+
+<file path="AGENTS.md">
+```md
+# Agents Guide
+
+This document defines how agents work in this repo. It is **policy**: follow it unless a task explicitly says otherwise. Goals: clarity, reproducibility, auditable steps.
+
+---
+
+## 1. Context
+
+- User:
+- Work:
+- Priorities: reproducibility, clarity, well-documented workflows.
+- Default approach: prefer simple, auditable steps over clever automation.
+
+### 1.1 Directory contract
+
+- `R/` → reusable functions only; no side effects on import; no top-level I/O.
+- `scripts/` → orchestration, CLI entry points, diagnostics helpers (small, no heavy compute).
+- `reports/` → Quarto views that **read** pipeline outputs (QC, diagnostics, inference stubs).
+- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports).
+
+### 1.2 Non-negotiables
+
+1. Do not add new compute into QMDs. If a report needs data that does not exist, add a target and a function.
+2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
+3. Prefer plain-text, diffable artefacts (CSV, MD, YAML) in `outputs/`.
+4. Use `here::here()` for all paths. No relative `../` or `getwd()` assumptions.
+
+---
+
+## 2. Platforms and general rules
+
+- Cloud: expect containerised tools and fixed resources. Long jobs may time out.
+- Laptop: respect limited resources and mixed OS quirks (Windows or Linux).
+- Parallel agents may run locally and in the cloud. Sync often and separate concerns.
+- Prefer tidyverse coding in general.
+
+---
+
+## 3. Environment wrapper (mandatory)
+
+- Always execute R and Quarto via `./dev/run-in-env.sh`.
+- Shared environment families: `r-core` (analysis, targets, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
+- Use per-project R packages via `R_LIBS_USER=$PWD/.rlib`.
+
+### 3.1 Quick start
+
+```bash
+# Run R scripts deterministically
+./dev/run-in-env.sh Rscript scripts/01_prepare.R
+./dev/run-in-env.sh Rscript scripts/02_model.R
+
+# Render a Quarto document
+./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
+
+# Start an interactive R session
+./dev/run-in-env.sh R
+```
+
+---
+
+## 4. Git and PR workflow
+
+We use GitHub for code, manuscript preparation, and project management. When you see “issue”, assume a GitHub Issue. Use `gh` CLI where convenient.
+
+### 4.1 Branching and commits
+
+- Work on `main`. Do not create long-lived feature branches unless agreed. If you suggest a branch, get approval.
+- Be clear which branch you are on. Pull regularly so `main` stays in sync.
+- Commit small, logical changes frequently. Push or pull often.
+- Keep the working tree tidy. Avoid untracked files. Default to tracking files; if unsure, ask.
+- Track **generated outputs under `outputs/`** (CSV, MD, HTML, PNG, and similar) so reviewers see what changed.
+- Do not delete generated files in `outputs/` unless explicitly requested or they are superseded by a rename in the same PR. Call this out in the PR body.
+
+### 4.2 Commit rules
+
+- Keep commits frequent to keep the remote current.
+- Reference Issues in commit titles when relevant, for example `fix: handle null IDs #123`.
+- Keep commits atomic. Commit only the files you changed and list each path explicitly.  
+  `git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
+- For brand-new files:  
+  `git restore --staged :/ && git add "path/to/file1" "path/to/file2" && git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
+- Always double-check `git status` before committing.
+- Delete unused or obsolete files when your changes make them irrelevant. Revert files only when the change is yours or explicitly requested.
+- Coordinate with other agents before removing their in-progress edits. Do not revert or delete work you did not author without agreement.
+- Never run destructive Git operations such as `git reset --hard`, `rm` of tracked files, or checking out older commits to overwrite the working tree unless the user gives explicit written instruction here.
+- Before deleting a file to resolve a local failure, stop and ask.
+- Do not amend commits unless you have explicit written approval in the task thread.
+- Moving, renaming, and restoring files is allowed.
+- Quote paths containing brackets or parentheses when staging or committing.
+- When running `git rebase`, avoid opening editors. Use `GIT_EDITOR=:` and `GIT_SEQUENCE_EDITOR=:` or pass `--no-edit`.
+
+### 4.3 Code review and approval
+
+- CI is not assumed.
+- Use Pull Requests for review. You can ask for reviews on commits.
+- Reference the driving Issue in the PR description. Include a closing keyword, for example `Closes #123`.
+
+---
+
+## 5. Development workflow
+
+Prefer text-based, diffable artefacts and keep compute in the pipeline.
+
+### 5.1 WRI cycle
+
+1. **Write**: Report code in `reports/*.qmd`.
+2. **Run**: build with `{targets}` and render QMD to `outputs/reports/...`.
+3. **Inspect**: review rendered MD or HTML in `outputs/...`.
+4. **Iterate**: refine; commit both code and updated `outputs/`.
+
+### 5.2 Principles for documents and code
+
+- Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in publication-ready format via apaquarto and consumes figures and tables generated earlier.
+- The data processing and analysis pipeline should be simple, reproducible, and shareable on OSF.
+- Readers care about the finished result. Avoid historical comments unless they aid understanding.
+- Do not create ad hoc `v2` files. Use Git for versioning.
+- Use Makefiles where helpful to automate the pipeline.
+- QMDs are views and logs. Heavy compute belongs in targets and `R/`.
+- Do not mix computation and interpretation. Interpretive prose is based on QMD outputs. Inline numbers when helpful.
+- YAML side outputs generated mid-pipeline may be read by `manuscript.qmd`. Prefer YAML over `.rds` for diffability.
+- Heavy R objects, for example Bayesian mixed models, can be saved as `.rds`.
+- Exploratory reports sit outside the core reproducible pipeline.
+- Quarto defaults: `freeze: true`, `echo: true`. See the freeze policy.
+
+### 5.3 Path management
+
+- Use `here()` for all file paths. Include a `.here` file if needed.
+
+### 5.4 Tests
+
+- QMDs must render.
+- Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown.
+- Add other tests as necessary.
+
+### 5.5 Quarto freeze policy
+
+Quarto writes cached renders into `_freeze/` directories adjacent to each QMD, for example `outputs/reports/exp1/_freeze/06_exp1_report/`. These directories are ignored by Git but must remain in place for deterministic rebuilds.
+
+- Production or stable runs: prefer `freeze: true` for exact outputs and deterministic rebuilds.
+- Local development: use the `local` profile (`configs/profiles/local.yaml`) with `reports: { freeze: auto }` to re-render only changed chunks.
+- Before tagging outputs, restore `freeze: true` or remove the local profile and confirm the corresponding `_freeze/` directories are populated.
+
+### 5.6 Core implementation principles
+
+- Fail fast and surface errors early.
+- Do not use defensive programming that hides missing data. Fix root causes.
+- Assume a deterministic pipeline. If data is missing, fix upstream.
+- Keep the file system organised. Use `scratch/` or `tmp/` for temporary work.
+- Keep debugging work separate or avoid committing it once fixed.
+- Implement the simplest solution that works. Avoid over-engineering.
+- Favour clarity and explainability over performance or terseness. Assume the code will be shared. Avoid obvious comments.
+- Avoid unnecessary intermediate data structures.
+
+### 5.7 Long-running tooling and stuck runs
+
+- Long-running tooling such as tests, Docker Compose, or migrations must use sensible timeouts or run in non-interactive batch mode. Never leave a shell command waiting indefinitely.
+- If a Codex run is too long or stuck on tool calling, apply the same rule. Use non-interactive batch, explicit timeouts, or exit and resume with log inspection.
+
+---
+</file>
+
 <file path="talk/talk-outline-only.md">
-# **Agentic AI for Reproducible Language Science: From Prompt to Pipeline**
+AGENT TALK
 
-Shane Lindsay
+# Agentic AI for Reproducible Language Science: From Prompt to Pipeline
 
-University of Hull
-
+Shane Lindsay  
+s.lindsay@hull.ac.uk
+University of Hull  
 https://github.com/shanelindsay/agentic-r/
 
 # Agenda
 
-- Why now? (spoiler: they finally work)
-- What is an agent?
-- Demo: agents + reproducible research patterns
+- Why now (spoiler: they finally work)
+- What is an agent
+- Demo: agents and reproducible research patterns
 - Practical patterns you can steal
 
-# Pre-requisites 
+# Pre-requisites
 
-- Assume you have used LLM Chatbots e.g. ChatGPT, ==探索未至之境==
-- Assume knowledge of R (but everything applies to other tools e.g. Python)
+Assume you have used LLM chatbots, for example ChatGPT, ==探索未至之境==  
+Assume knowledge of R (applies to Python and other tools too)
 
-# Why agents now?
+# Why agents now
 
-- LLM models are now **smart enough** for multi-step, tool-using tasks
-- They are **cheap enough** to be practical for students and labs
-- Agents are accessible 
-- The technology is finally useful for everyday research work
+- LLM models are now smart enough for multi-step, tool-using tasks
+- They are cheap enough to be practical for students and labs
+- Agents are accessible
+- The technology is useful for everyday research work
 
-By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
+**Provocation**: By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
 
-# What is an agent?
+# What is an agent
 
 - General purpose LLM that lives inside a computer
-- Read/write access to file system, with access to bash/powershell
-- Whatever you can do, it can do with (with guardrails/approvals)
-- Can work automously for typically < 20 minutes 
-- Search web, write code, execute it, write it up
-- Full end-to-end scientific process
+- Read and write access to the file system, with access to bash or PowerShell
+- Whatever you can do, it can do, with guardrails and approvals
+- Can work autonomously for typically less than 20 minutes
+- Search the web, write code, execute it, write it up
+- Full end to end scientific process  
   - Today focused on analyses
 
 # Costs
 
-- One knob: **quick and fast vs slow and smart**
+- One knob: fast and rough versus slow and smart
 - Daily heavy use: $200 per month
 - Moderate use: $100 per month
-- Light use: 20$ per month
-- Free tiers
+- Light use: $20 per month
+- Free tiers exist
 
 # Examples
 
-- US: Codex (OpenAI), Claude Code (Anthropic), Gemini (Google), Cursor (Cursor), CoPilot (Microsoft)
+- US: Codex (OpenAI), Claude Code (Anthropic), Gemini (Google), Cursor, Copilot (Microsoft)
 - China: Kimi K2, Qwen 3, GLM 4.5
-- Currently: OpenAI Codex is smartest, Claude Code 4.5 2nd, GLM/K2 best for cost
+- Currently: OpenAI Codex is smartest, Claude Code 4.5 second, GLM or K2 best for cost
 
 # Promise of agents
 
-- Incresease speed
+- Increase speed
 - Increase capability
 
 # Perils of agents
@@ -1666,99 +1826,90 @@ By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
 - Errors
 - Loss of control and responsibility
 - Atrophy of skills
-- Technical demands / complexity (tech debt)
+- Technical demands and complexity (tech debt)
 
 # Using agents
 
-- Think of an agent as a **new lab member** arriving cold to your research project
-- Very keen, very fast, very smart, sometimes wise, sometimes also dumb
-- Agents work best when projects are structured, documented, and runnable
-- Structure: encourages following consistent patterns in your workflows
+- Think of an agent as a new lab member arriving cold to your research project
+- Very keen, very fast, very smart, sometimes wise, sometimes also wrong
+- Agents work best when projects are structured, documented and runnable
+- Structure encourages consistent patterns in your workflows
 
-# Why reproducible research?
+# Why reproducible research
 
-- **Verify findings** - Others can validate your results
-- **Reduce bias **- Transparency in methods
-- **Catch errors** - Community review improves quality
-- **Preserve knowledge** - Methods survive beyond individual researchers
-- *Increasingly required by funding agencies and journals*
+- Verify findings, others can validate your results
+- Reduce bias through transparency in methods
+- Catch errors, community review improves quality
+- Preserve knowledge beyond individual researchers
+- Increasingly required by funding agencies and journals
 
-# Reproducible research and Agentic AI are best friends
+# Reproducible research and agentic AI are best friends
 
-- Research codebase lifecycle: **plan → execute → review → share → re-run**
-- Reproducibility means others (i.e. *agents*) can repeat the same steps and get the same artefacts
+- Research codebase lifecycle: plan → execute → review → share → re-run
+- Reproducibility means others, including agents, can repeat the same steps and get the same artefacts
 - Agents support reproducibility when outputs are scripted, logged and text based
 
 # Coding patterns and how agents interact
 
-- Monolithic 1000 line script : quick start, fragile for change; sprawl, hard to understand and debug
-- Numbered scripts: clearer workflow, smaller functional units
-- Makefile-orchestrated scripts: explicit dependencies; deterministic runs
+- beginner: Monolithic 1000 line script: quick start, fragile for change, sprawl, hard to understand and debug
+- intermediate: Numbered scripts: clearer workflow, smaller functional units
+- pro: Makefile orchestrated scripts: targets, explicit dependencies, deterministic runs
 
-*Goal: press a button, raw data transformed directly to numbers in a manuscript*
+**Goal**: press a button, raw data transformed directly to numbers in a manuscript
 
 # Containers and predictability
 
-- Containers are cloud based (unix) operating systems - spun up and thrown away
-- Agents are stateless (no memory!); containers provide a predictable starting point
-- If a stranger can run the repo from just looking at documentation, an agent can too
-- Running Agents in containers makes them safe - can only operate inside the container
+- Containers are cloud based Unix environments that can be spun up and thrown away
+- Agents are stateless across sessions, containers provide a predictable starting point
+- Running agents in container makes it safer
+- If a stranger can run the repo from the documentation, an agent can too
 
-# Github 
+# GitHub
 
-- GIthub provides version tracking
-- Monitor and approve any changes (Pull requests)
-- Protect work from being overwritten (history always saved)
+- GitHub provides version tracking
+- Protect work from being overwritten, history is always saved
+- Agents can use it via bash, you can interact in an IDE or on web
+- You can monitor and approve any changes with pull requests
 
-# shanelindsay/agentic-R Github Repo
+# shanelindsay/agentic-r GitHub repo
 
-- AGENTS.md > 
-- dev/run-in-env.sh > get R working using micromamba
-- environment.yml - R version and packages to use (numbered, reproducible)
- 
-- Agents file tells agent to use the wrapper to run scripts
-
+- `AGENTS.md`: how the agent should work in this repo - the "handbook"
+- `dev/run-in-env.sh`: get R working using micromamba
+- `environment.yml`: R version and packages to use (numbered, reproducible)
+- `makefile` - recipe of what scripts to run in which order
+- Agents are told to use the wrapper to run scripts
 
 # Workflow
 
-- Makefile + two small R scripts (`01_prepare.R`, `02_model.R`)
-- `data/raw`  `data/processed`, `results/metrics.yml`
-- Explain changes in the PR description
+- Makefile and two small R scripts (`01_prepare.R`, `02_model.R`)
+- `data/raw`, `data/processed`, `results/metrics.yml`
+- Results feed into quarto report
+
+# Example: Lexical Decision in Chinese
+- Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods, 57, 206. https://doi.org/10.3758/s13428-025-02701-7  
+
+- Sun, C. C., Hendrix, P., Ma, J. Q., & Baayen, R. H. (2018). Chinese Lexical Database (CLD): A large‑scale lexical database for simplified Chinese. Behavior Research Methods, 50(5), 2606–2629. https://doi.org/10.3758/s13428-018-1038-3  
 
 # Example: Lexical Decision in Chinese
 
 - Baseline: run the pipeline once to produce `metrics.yml`
-- Demo data: a tiny, lawful slice of a lexical decision dataset + lexical predictors
-- Backup: pre-baked PR and a 30–45 s recording of a successful run
+- lexical decision RT with lexical predictors
 
-# Agent demo — Builder
+# Agent demo: Builder
 
-- Agent prompt: add one predictor (e.g. neighbourhood), update `02_model.R`, write new coefficient to `metrics.yml`, update README
-- You re-run the pipeline deterministically via the wrapper/Makefile
-- Show the small, scoped diff in `metrics.yml`
+- Agent prompt: add one predictor and rerun report 
+- Agent runs pipeline with wrapper and Makefile
 
-# Agent demo — Review
-
-- Second agent reads the PR diff and `metrics.yml` and does a review
-- Human reviews the agent review and approves or requests changes
-- Loop 
-
-# Interactive vs script-based
-
-- 
-- Execute changes via scripts/Makefile for determinism and reproducibility
-- Store results as diffable tables for easy review
-
-# GitHub review
-
-- Branch → PR → concise description → human review → merge
-- Keep commits small and well-scoped; include one-line rationales
-- Use PR comments for agent checklists and reviewer notes
-
-# End-to-end reporting
+# End to end reporting
 
 - Manuscript or Quarto report reads values from `results/*`
 - This keeps numbers traceable and updates transparent
+
+# Agent demo: Github Pull Request Review
+
+- Second agent reads the PR diff and writes a review
+- Human reviews the agent review and approves or requests changes
+- Loop...
 
 # Agent patterns to copy
 
@@ -1769,116 +1920,127 @@ By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
 
 # Where to start
 
-- Pick one stage (cleaning, modelling, reporting) and start small
-- Keep tasks atomic; measure time saved against review effort
+- Pick one stage, cleaning or modelling or reporting, and start small
+- Keep tasks atomic
+- Measure time saved against review effort
 
 # Practical tips
 
-- Short, explicit prompts; give file paths and desired outputs
-- Make outputs diffable (CSV/YAML); keep raw data read-only
-- Pre-record a fallback run for live demos
-
-# Memes and memory aids
-
-- Single tasteful meme with one-line caption to reinforce a point
-- Humour lines: “Agents don’t bring cake, but they write the README”; “Keen RA, occasional hallucinations”
+- Short, explicit prompts, give file paths and desired outputs
+- Make outputs diffable (CSV or YAML), keep raw data read only
 
 # Take-home
 
-- Agents expand what a small team can do
-- Structure (container + Makefile + scripts + PRs) keeps agents honest
+- Agents expand what you can do
+- You become a project manager rather than coder - different skill set, but still techical skills needed
+- Structure, container plus Makefile plus scripts plus PRs
 - Start small, review everything, iterate responsibly
 
-# Reserve / buffer
 
-- Space for extra demo tweaks, audience questions, or a second quick agent change
-- If unused, recap the main points
+# Q and A
 
-# Q&A
-
-- Show repo URL / QR and contact details
-- Invite concrete “where would you start?” or “what would you like a template for?” questions
+s.lindsay@hull.ac.uk
+https://github.com/shanelindsay/agentic-r/
 </file>
 
 <file path="Makefile">
-.PHONY: all clean
-all: results/metrics.yml
+.PHONY: all data analyse report clean slides talk
 
-data/processed/merged.csv: data/raw/sclp_sample.csv data/raw/cld_sample.csv R/01_prepare.R
-	./dev/run-in-env.sh Rscript R/01_prepare.R
+# Prefer the env wrapper, fall back gracefully if it is not available
+RUNNER  ?= ./dev/run-in-env.sh
+RSCRIPT ?= Rscript
+QUARTO  ?= quarto
 
-results/metrics.yml: data/processed/merged.csv R/02_model.R
-	./dev/run-in-env.sh Rscript R/02_model.R
+ifeq (,$(wildcard $(RUNNER)))
+R_CMD := $(RSCRIPT)
+Q_CMD := $(QUARTO)
+else
+R_CMD := $(RUNNER) Rscript
+Q_CMD := $(RUNNER) $(QUARTO)
+endif
+
+all: analyse report
+
+outputs/data/processed.csv outputs/data/trials_filtered.csv outputs/results/cleaning.yml outputs/figures/rt_hist.png: scripts/01_prepare.R configs/cleaning.yml
+	$(R_CMD) scripts/01_prepare.R
+
+outputs/results/metrics.yml: outputs/data/processed.csv scripts/02_model.R
+	$(R_CMD) scripts/02_model.R
+
+report: outputs/results/metrics.yml outputs/results/cleaning.yml outputs/figures/rt_hist.png reports/analysis.qmd
+	$(Q_CMD) render reports/analysis.qmd --output-dir $(CURDIR)/outputs/reports
+
+data: outputs/data/processed.csv
+
+analyse: outputs/results/metrics.yml
 
 clean:
-	rm -f data/processed/*.csv results/*.yml
+	rm -rf outputs/data outputs/results outputs/figures outputs/reports
 
 # ---- Slides (Quarto) ----
-.PHONY: slides talk
 slides: outputs/deliverables/agentic-ai-concrete/agentic-ai-concrete.pptx
 talk: slides
 
 outputs/deliverables/agentic-ai-concrete/agentic-ai-concrete.pptx: slides/agentic-ai-concrete.qmd talk/nord-theme.potx dev/run-in-env.sh
-	./dev/run-in-env.sh quarto render slides/agentic-ai-concrete.qmd
+	$(Q_CMD) render slides/agentic-ai-concrete.qmd
 	mkdir -p outputs/deliverables/agentic-ai-concrete
 	mv -f slides/agentic-ai-concrete.pptx outputs/deliverables/agentic-ai-concrete/
 </file>
 
 <file path="README.md">
-# Agentic R Lexical-Decision Demo (Makefile pipeline)
+# Agentic R Lexical-Decision Demo (scripts + Quarto)
 
 A minimal, R-focused, agent-friendly pipeline for a **lexical decision** demo:
 - **Task:** character-level lexical decision (RT/accuracy).
 - **Data:** tiny slices from the Simplified Chinese Lexicon Project (SCLP; trial-level) and the Chinese Lexical Database (CLD; predictors).
-- **Pipeline:** `make` orchestrates two small R scripts → writes a **diffable** results file (`results/metrics.yml`).
+- **Pipeline:** `make` orchestrates three tiny steps plus a report → writes **diffable** outputs under `outputs/` (for example `outputs/results/metrics.yml`).
 
 ## Why this repo?
 Agents (e.g., Codex/Claude Code/Cursor) behave like new lab members arriving cold. A tidy repo + Makefile + small scripts gives them structure; you stay in control by running scripts deterministically and reviewing diffs.
 
 ## Quick start (local)
 1. Install R (≥ 4.2) and `make`.
-2. Clone:  
+2. Clone:
    ```bash
    git clone <your-repo-url> agentic-r-lexdec-demo
    cd agentic-r-lexdec-demo
    ```
 3. Run the pipeline:
-
    ```bash
-   make          # or: Rscript R/01_prepare.R && Rscript R/02_model.R
+   make          # or: make data && make analyse && make report
    ```
-4. Inspect the output:
-   `results/metrics.yml` (intercept/slope(s)/R², plus N and timestamp).
+4. Inspect the outputs:
+   - `outputs/data/processed.csv`
+   - `outputs/results/cleaning.yml`
+   - `outputs/results/metrics.yml` (intercept/slope(s)/R², plus `n_obs` and timestamp)
+   - `outputs/reports/analysis.{html,pdf,docx,md}`
 
 ### Optional: run scripts manually (inside project env)
-
-Use the provided wrapper to ensure the micromamba environment is active:
-
+The Makefile calls `./dev/run-in-env.sh` automatically when available. You can also invoke steps yourself:
 ```bash
-./dev/run-in-env.sh Rscript R/01_prepare.R
-./dev/run-in-env.sh Rscript R/02_model.R
+./dev/run-in-env.sh Rscript scripts/01_prepare.R
+./dev/run-in-env.sh Rscript scripts/02_model.R
+./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
 ```
 
-## Data (tiny, curated slices)
+## Data
 
-* **SCLP trial-level data**: trial-level lexical decision for 8,105 characters + 4,864 pseudocharacters. Download the full data from OSF (see paper) and create a tiny lawful slice (for example, select a handful of rows in R) before committing it as `data/raw/sclp_sample.csv`. ([PMC][1])
-* **CLD predictors**: lexical variables for simplified Mandarin words. Download from the CLD website and create a small slice `data/raw/cld_sample.csv` with at least `char`, `log_freq`, `strokes`. ([SpringerLink][2])
+See licences and fetch locations in `docs/data-sources.md`.
 
-> We **do not** redistribute the full datasets here. Please follow the providers’ terms when creating the tiny samples.
+* **SCLP trial-level data**: trial-level lexical decision for 8,105 characters + 4,864 pseudocharacters. Download the full data from OSF (see paper) and create a tiny lawful slice (for example, select a handful of rows in R) before committing it as `data/raw/sclp_sample.csv`. (See [sclp-doi])
+
+* **CLD predictors**: lexical variables for simplified Mandarin words. Download from the CLD website and create a small slice `data/raw/cld_sample.csv` with at least `char`, `log_freq`, `strokes`. (See [cld-paper])
 
 ## How it works
 
-* `R/01_prepare.R`: trims trials, aggregates to per-character `mean_log_rt` (ms on log scale) and `acc_rate`, joins to CLD predictors → writes `data/processed/merged.csv`.
-* `R/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `results/metrics.yml`.
-
-## Suggested agent use
-
-* Ask the agent to **add one predictor** or **change trimming**, but keep runs scripted: “Edit `R/02_model.R` to add `+ neighbors` and update `results/metrics.yml`.”
-* Commit on a branch; raise a PR so the diff shows only what changed.
+* `configs/cleaning.yml`: shared parameters for trimming + file sources (full SCLP + CLD).
+* `scripts/01_prepare.R`: applies trimming once, writes `outputs/data/trials_filtered.csv`, aggregates to per-character `outputs/data/processed.csv`, and emits cleaning summary + histogram.
+* `scripts/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
+* `reports/analysis.qmd`: reads YAML and figure, renders to `outputs/reports/`.
 
 ## Scientific thinking skills library
 
-This repo now bundles the **scientific-thinking** skill cards from K-Dense AI’s [Claude Scientific Skills](https://github.com/K-Dense-AI/claude-scientific-skills) collection. The content lives in `skills/scientific-thinking/` and includes detailed guidance for:
+This repo bundles the **scientific-thinking** skill cards from K-Dense AI’s [Claude Scientific Skills](https://github.com/K-Dense-AI/claude-scientific-skills) collection. The content lives in `skills/scientific-thinking/` and includes detailed guidance for:
 
 - literature reviews, hypothesis generation, exploratory data analysis
 - critical review, peer review, scholar evaluation, and scientific brainstorming
@@ -1894,13 +2056,15 @@ Render the concrete deck (PPTX) to `outputs/`:
 make slides
 ```
 
+The rule uses `quarto render` via the same environment wrapper and moves the generated file into `outputs/deliverables/agentic-ai-concrete/` for review.
+
 ## Attribution
 
-* SCLP: Wang et al., 2025. Trial-level data on OSF; paper open access. ([PMC][1])
-* CLD: Sun, Hendrix, Ma, & Baayen, 2018 (download & documentation at chineselexicaldatabase.com). ([SpringerLink][2])
+* SCLP: Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods. [DOI][sclp-doi]
+* CLD: Sun, C. C., Hendrix, P., Ma, J. Q., & Baayen, R. H. (2018). Chinese Lexical Database (CLD): A large-scale lexical database for simplified Chinese. Behavior Research Methods. [DOI][cld-paper]
 
-[1]: https://pmc.ncbi.nlm.nih.gov/articles/PMC12185670/
-[2]: https://link.springer.com/article/10.3758/s13428-018-1038-3?utm_source=chatgpt.com
+[sclp-doi]: https://doi.org/10.3758/s13428-025-02701-7
+[cld-paper]: https://doi.org/10.3758/s13428-018-1038-3
 </file>
 
 </files>
