@@ -21,6 +21,7 @@ outputs/data/processed.csv outputs/data/trials_filtered.csv outputs/results/clea
 
 # Analyses: explicit list in display order
 ANALYSES := \
+	outputs/results/ideas_catalog.yml \
 	outputs/results/base_lm.yml
 # append new analyses here:
 # 	outputs/results/neighbour_density.yml \
@@ -29,6 +30,9 @@ ANALYSES := \
 analyse: $(ANALYSES)
 
 # One clear rule per analysis
+outputs/results/ideas_catalog.yml: configs/ideas.yml configs/idea_scoring.yml scripts/00_ideas_catalog.R
+	$(R_CMD) scripts/00_ideas_catalog.R
+ 
 outputs/results/base_lm.yml: outputs/data/processed.csv scripts/02_base_lm.R
 	$(R_CMD) scripts/02_base_lm.R
 # When you add an analysis, add a matching rule:

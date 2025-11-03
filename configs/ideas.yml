@@ -1,0 +1,156 @@
+# Research ideas catalog (skeleton)
+# Fill in the fields under each idea. Scores are 1–5 integers unless noted.
+
+ideas:
+  - id: I01
+    slug: tbd_01
+    title: "TBD: analysis idea 01"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    # scoring inputs
+    effort: 3        # 1=trivial, 5=heavy
+    interest: 3      # 1=low, 5=high
+    novelty: 3       # 1=known, 5=new
+    risk: 2          # 1=low, 5=high
+    # progress tracking
+    status: proposed # proposed|in_progress|done
+    implemented: false
+    pr_ref: ""       # e.g., https://github.com/<org>/<repo>/pull/123
+    findings: ""     # short summary once done
+
+  - id: I02
+    slug: tbd_02
+    title: "TBD: analysis idea 02"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+
+  - id: I03
+    slug: tbd_03
+    title: "TBD: analysis idea 03"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+
+  - id: I04
+    slug: tbd_04
+    title: "TBD: analysis idea 04"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+
+  - id: I05
+    slug: tbd_05
+    title: "TBD: analysis idea 05"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+
+  - id: I06
+    slug: tbd_06
+    title: "TBD: analysis idea 06"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+
+  - id: I07
+    slug: tbd_07
+    title: "TBD: analysis idea 07"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+
+  - id: I08
+    slug: tbd_08
+    title: "TBD: analysis idea 08"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+
+  - id: I09
+    slug: tbd_09
+    title: "TBD: analysis idea 09"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+
+  - id: I10
+    slug: tbd_10
+    title: "TBD: analysis idea 10"
+    question: ""
+    notes: ""
+    tags: [tbd]
+    effort: 3
+    interest: 3
+    novelty: 3
+    risk: 2
+    status: proposed
+    implemented: false
+    pr_ref: ""
+    findings: ""
+

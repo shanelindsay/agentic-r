@@ -1,0 +1,192 @@
+id: ideas_catalog
+title: 'Analysis ideas: planning board'
+timestamp: 2025-11-03T09:24:16+0000
+weights:
+  ease: 0.5
+  interest: 0.35
+  novelty: 0.2
+  risk: 0.15
+scale:
+  min: 1.0
+  max: 5.0
+ideas:
+- id: I01
+  slug: tbd_01
+  title: 'TBD: analysis idea 01'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I02
+  slug: tbd_02
+  title: 'TBD: analysis idea 02'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I03
+  slug: tbd_03
+  title: 'TBD: analysis idea 03'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I04
+  slug: tbd_04
+  title: 'TBD: analysis idea 04'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I05
+  slug: tbd_05
+  title: 'TBD: analysis idea 05'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I06
+  slug: tbd_06
+  title: 'TBD: analysis idea 06'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I07
+  slug: tbd_07
+  title: 'TBD: analysis idea 07'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I08
+  slug: tbd_08
+  title: 'TBD: analysis idea 08'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I09
+  slug: tbd_09
+  title: 'TBD: analysis idea 09'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''
+- id: I10
+  slug: tbd_10
+  title: 'TBD: analysis idea 10'
+  question: ''
+  notes: ''
+  tags: tbd
+  scores:
+    effort: 3.0
+    ease: 3.0
+    interest: 3.0
+    novelty: 3.0
+    risk: 2.0
+  priority: 2.85
+  rank: 1
+  status: proposed
+  implemented: no
+  pr_ref: ''
+  findings: ''

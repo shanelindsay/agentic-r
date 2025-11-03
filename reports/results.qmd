@@ -20,6 +20,10 @@ fmt6 <- function(x) sprintf("%.6f", x)
 
 cleaning <- yaml::read_yaml(here("outputs", "results", "cleaning.yml"))
 base <- yaml::read_yaml(here("outputs", "results", "base_lm.yml"))
+ideas <- tryCatch(
+  yaml::read_yaml(here("outputs", "results", "ideas_catalog.yml")),
+  error = function(e) NULL
+)
 ```
 
 ## Cleaning
@@ -78,3 +82,30 @@ To add another analysis:
 3) copy this section, rename, and read slug.yml
 Keep computation out of the QMD.
 -->
+
+## Analysis ideas (planning)
+
+```{r}
+#| label: ideas-table
+if (!is.null(ideas)) {
+  tbl <- do.call(rbind, lapply(ideas$ideas, function(x){
+    data.frame(
+      rank = as.integer(x$rank),
+      id = x$id,
+      title = x$title,
+      ease = as.numeric(x$scores$ease),
+      interest = as.numeric(x$scores$interest),
+      novelty = as.numeric(x$scores$novelty),
+      risk = as.numeric(x$scores$risk),
+      priority = as.numeric(x$priority),
+      implemented = ifelse(isTRUE(x$implemented), "[x]", "[ ]"),
+      pr = ifelse(nzchar(x$pr_ref), x$pr_ref, ""),
+      findings = x$findings,
+      stringsAsFactors = FALSE
+    )
+  }))
+  tbl[order(tbl$rank), ]
+} else {
+  data.frame(note = "ideas_catalog.yml not found; run scripts/00_ideas_catalog.R")
+}
+```

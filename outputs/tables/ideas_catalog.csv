@@ -1,0 +1,11 @@
+rank,id,slug,title,effort,ease,interest,novelty,risk,priority,status,implemented,pr_ref,findings
+1,I01,tbd_01,TBD: analysis idea 01,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I02,tbd_02,TBD: analysis idea 02,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I03,tbd_03,TBD: analysis idea 03,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I04,tbd_04,TBD: analysis idea 04,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I05,tbd_05,TBD: analysis idea 05,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I06,tbd_06,TBD: analysis idea 06,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I07,tbd_07,TBD: analysis idea 07,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I08,tbd_08,TBD: analysis idea 08,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I09,tbd_09,TBD: analysis idea 09,3,3,3,3,2,2.85,proposed,FALSE,,
+1,I10,tbd_10,TBD: analysis idea 10,3,3,3,3,2,2.85,proposed,FALSE,,

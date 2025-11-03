@@ -1,0 +1,18 @@
+# Weights and options for ranking ideas
+# Priority score = w_ease*ease + w_interest*interest + w_novelty*novelty - w_risk*risk
+
+weights:
+  ease: 0.5
+  interest: 0.35
+  novelty: 0.2
+  risk: 0.15
+
+# Effort is 1–5; ease = 6 - effort
+scale:
+  min: 1
+  max: 5
+
+output:
+  csv_table: outputs/tables/ideas_catalog.csv
+  yaml_summary: outputs/results/ideas_catalog.yml
+

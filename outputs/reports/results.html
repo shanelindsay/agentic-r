@@ -84,6 +84,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#cleaning" id="toc-cleaning" class="nav-link active" data-scroll-target="#cleaning">Cleaning</a></li>
   <li><a href="#baseline-model-frequency-and-strokes" id="toc-baseline-model-frequency-and-strokes" class="nav-link" data-scroll-target="#baseline-model-frequency-and-strokes">Baseline model: frequency and strokes</a></li>
+  <li><a href="#analysis-ideas-planning" id="toc-analysis-ideas-planning" class="nav-link" data-scroll-target="#analysis-ideas-planning">Analysis ideas (planning)</a></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="results.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li><li><a href="results.docx"><i class="bi bi-file-word"></i>MS Word</a></li><li><a href="results.md"><i class="bi bi-file-code"></i>Github (GFM)</a></li></ul></div></nav>
 </div>
@@ -118,7 +119,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>fmt6 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.6f"</span>, x)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>cleaning <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"cleaning.yml"</span>))</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"base_lm.yml"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"base_lm.yml"</span>))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>ideas <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"ideas_catalog.yml"</span>)),</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">error =</span> <span class="cf">function</span>(e) <span class="cn">NULL</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="cleaning" class="level2">
 <h2 class="anchored" data-anchor-id="cleaning">Cleaning</h2>
@@ -189,6 +194,56 @@ To add another analysis:
 3) copy this section, rename, and read slug.yml
 Keep computation out of the QMD.
 -->
+</section>
+<section id="analysis-ideas-planning" class="level2">
+<h2 class="anchored" data-anchor-id="analysis-ideas-planning">Analysis ideas (planning)</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(ideas)) {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  tbl <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(ideas<span class="sc">$</span>ideas, <span class="cf">function</span>(x){</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">rank =</span> <span class="fu">as.integer</span>(x<span class="sc">$</span>rank),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">id =</span> x<span class="sc">$</span>id,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> x<span class="sc">$</span>title,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">ease =</span> <span class="fu">as.numeric</span>(x<span class="sc">$</span>scores<span class="sc">$</span>ease),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">interest =</span> <span class="fu">as.numeric</span>(x<span class="sc">$</span>scores<span class="sc">$</span>interest),</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">novelty =</span> <span class="fu">as.numeric</span>(x<span class="sc">$</span>scores<span class="sc">$</span>novelty),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">risk =</span> <span class="fu">as.numeric</span>(x<span class="sc">$</span>scores<span class="sc">$</span>risk),</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">priority =</span> <span class="fu">as.numeric</span>(x<span class="sc">$</span>priority),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">implemented =</span> <span class="fu">ifelse</span>(<span class="fu">isTRUE</span>(x<span class="sc">$</span>implemented), <span class="st">"[x]"</span>, <span class="st">"[ ]"</span>),</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">pr =</span> <span class="fu">ifelse</span>(<span class="fu">nzchar</span>(x<span class="sc">$</span>pr_ref), x<span class="sc">$</span>pr_ref, <span class="st">""</span>),</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">findings =</span> x<span class="sc">$</span>findings,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  tbl[<span class="fu">order</span>(tbl<span class="sc">$</span>rank), ]</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">note =</span> <span class="st">"ideas_catalog.yml not found; run scripts/00_ideas_catalog.R"</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   rank  id                 title ease interest novelty risk priority
+1     1 I01 TBD: analysis idea 01    3        3       3    2     2.85
+2     1 I02 TBD: analysis idea 02    3        3       3    2     2.85
+3     1 I03 TBD: analysis idea 03    3        3       3    2     2.85
+4     1 I04 TBD: analysis idea 04    3        3       3    2     2.85
+5     1 I05 TBD: analysis idea 05    3        3       3    2     2.85
+6     1 I06 TBD: analysis idea 06    3        3       3    2     2.85
+7     1 I07 TBD: analysis idea 07    3        3       3    2     2.85
+8     1 I08 TBD: analysis idea 08    3        3       3    2     2.85
+9     1 I09 TBD: analysis idea 09    3        3       3    2     2.85
+10    1 I10 TBD: analysis idea 10    3        3       3    2     2.85
+   implemented pr findings
+1          [ ]            
+2          [ ]            
+3          [ ]            
+4          [ ]            
+5          [ ]            
+6          [ ]            
+7          [ ]            
+8          [ ]            
+9          [ ]            
+10         [ ]            </code></pre>
+</div>
+</div>
 </section>
 
 </main>
