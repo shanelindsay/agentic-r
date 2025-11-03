@@ -71,7 +71,7 @@ Assume knowledge of R (applies to Python and other tools too)
 # Examples
 
 - US: Codex (OpenAI), Claude Code (Anthropic), Gemini (Google), Cursor, Copilot (Microsoft)
-- China: Kimi K2, Qwen 3, GLM 4.5
+- China: Kimi K2, Qwen 3, GLM 4.5, Minimax M2
 - Currently: OpenAI Codex is smartest, Claude Code 4.5 second, GLM or K2 best for cost
 
 ---
@@ -260,4 +260,3 @@ Assume knowledge of R (applies to Python and other tools too)
 
 - Show repo URL or QR and contact details
 - Invite concrete questions, for example “Where would you start” or “What template would help”
-

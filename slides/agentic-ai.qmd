@@ -65,6 +65,7 @@ Timing: 5:30-6:30. Mention without prices; institutions vary.
 - Qwen models (AliCloud).
 - Kimi (Moonshot AI).
 - GLM (Zhipu AI).
+- Minimax M2 (MiniMax AI).
 - ERNIE, Hunyuan, Doubao.
 ![Provider logos grid (non-generative)](placeholder.png)
 
