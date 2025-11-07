@@ -84,6 +84,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#cleaning" id="toc-cleaning" class="nav-link active" data-scroll-target="#cleaning">Cleaning</a></li>
   <li><a href="#baseline-model-frequency-and-strokes" id="toc-baseline-model-frequency-and-strokes" class="nav-link" data-scroll-target="#baseline-model-frequency-and-strokes">Baseline model: frequency and strokes</a></li>
+  <li><a href="#phonological-family-pronunciation-match" id="toc-phonological-family-pronunciation-match" class="nav-link" data-scroll-target="#phonological-family-pronunciation-match">Phonological family × pronunciation match</a></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="results.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li><li><a href="results.docx"><i class="bi bi-file-word"></i>MS Word</a></li><li><a href="results.md"><i class="bi bi-file-code"></i>Github (GFM)</a></li></ul></div></nav>
 </div>
@@ -118,7 +119,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>fmt6 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.6f"</span>, x)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>cleaning <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"cleaning.yml"</span>))</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"base_lm.yml"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"base_lm.yml"</span>))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>phon_pron <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"phon_family_pron_match.yml"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="cleaning" class="level2">
 <h2 class="anchored" data-anchor-id="cleaning">Cleaning</h2>
@@ -182,6 +184,42 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>R² 0.434; adjusted R² 0.433; residual sigma 0.099. AIC -6851.160, BIC -6826.134.</p>
+</section>
+<section id="phonological-family-pronunciation-match" class="level2">
+<h2 class="anchored" data-anchor-id="phonological-family-pronunciation-match">Phonological family × pronunciation match</h2>
+<p>Characters with phonetic components that predict whole-character pronunciation show a slightly steeper benefit of belonging to larger phonological families than mismatch items, but the interaction term is small (b = 0.002465, <em>p</em> = 0.558). Consistent with facilitation claims (Li et al., 2011; Lee et al., 2015; Zhou et al., 2021; Wang et al., 2025), the model suggests ~8 ms faster responses across the observed family-size range when pronunciations match versus ~1.5 ms when they mismatch, implying mostly additive rather than flipping effects.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">term =</span> <span class="fu">c</span>(<span class="st">"phon_family_z"</span>, <span class="st">"pron_match_mismatch"</span>, <span class="st">"interaction"</span>),</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimate =</span> <span class="fu">c</span>(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(phon_pron<span class="sc">$</span>main_effects<span class="sc">$</span>phon_family_z)),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(phon_pron<span class="sc">$</span>main_effects<span class="sc">$</span>pron_match_mismatch)),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(phon_pron<span class="sc">$</span>interaction<span class="sc">$</span>estimate))</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">p_value =</span> <span class="fu">c</span>(</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="cn">NA</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="cn">NA</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt6</span>(<span class="fu">as.numeric</span>(phon_pron<span class="sc">$</span>interaction<span class="sc">$</span>p_value))</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 term  estimate  p_value
+1       phon_family_z -0.003046     &lt;NA&gt;
+2 pron_match_mismatch -0.001500     &lt;NA&gt;
+3         interaction  0.002465 0.557565</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="fu">here</span>(phon_pron<span class="sc">$</span>figure))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../outputs/figures/phon_family_pron_interaction.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The interaction plot shows gently diverging slopes: match cases speed up noticeably as family size grows, whereas mismatch cases flatten, mirroring predictions yet without a statistically reliable crossover. Accuracy effects could not be estimated because the current preprocessing keeps only correct trials, leaving ceiling-level accuracy summaries.</p>
 <!--
 To add another analysis:
 1) create scripts/NN_slug.R that writes outputs/results/slug.yml

@@ -49,10 +49,22 @@ cld <- if (identical(cfg$cld_type, "full")) {
     transmute(
       char     = Word,
       strokes  = as.numeric(Strokes),
-      log_freq = log10(pmax(as.numeric(Frequency), 0) + 1)
+      log_freq = log10(pmax(as.numeric(Frequency), 0) + 1),
+      phon_family_size = suppressWarnings(as.numeric(C1PRFamilySize)),
+      pron_match = dplyr::case_when(
+        is.na(C1PRRegularity) ~ NA_character_,
+        C1PRRegularity == 1   ~ "match",
+        C1PRRegularity == 0   ~ "mismatch",
+        TRUE ~ NA_character_
+      )
     )
 } else {
-  cld_raw |> select(char, log_freq, strokes)
+  cld_raw |>
+    select(char, log_freq, strokes) |>
+    mutate(
+      phon_family_size = NA_real_,
+      pron_match = NA_character_
+    )
 }
 
 # Trim, aggregate, join
@@ -68,11 +80,23 @@ write_csv_atomic(filtered_trials, filtered_path)
 
 agg_rt <- filtered_trials |>
   group_by(char) |>
-  summarise(mean_log_rt = mean(log(rt_ms)), .groups = "drop")
+  summarise(
+    mean_log_rt = mean(log(rt_ms)),
+    mean_rt_ms = mean(rt_ms),
+    sd_rt_ms = sd(rt_ms),
+    kept_trials = dplyr::n(),
+    .groups = "drop"
+  ) |>
+  mutate(geom_rt_ms = exp(mean_log_rt))
 
 agg_acc <- sclp |>
   group_by(char) |>
-  summarise(acc_rate = mean(correct, na.rm = TRUE), .groups = "drop")
+  summarise(
+    total_trials = dplyr::n(),
+    correct_trials = sum(correct == 1, na.rm = TRUE),
+    acc_rate = correct_trials / pmax(total_trials, 1),
+    .groups = "drop"
+  )
 
 dat <- agg_rt |>
   left_join(agg_acc, by = "char") |>
