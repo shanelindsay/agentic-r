@@ -21,7 +21,8 @@ outputs/data/processed.csv outputs/data/trials_filtered.csv outputs/results/clea
 
 # Analyses: explicit list in display order
 ANALYSES := \
-	outputs/results/base_lm.yml
+	outputs/results/base_lm.yml \
+	outputs/results/freq_rt_complexity.yml
 # append new analyses here:
 # 	outputs/results/neighbour_density.yml \
 # 	outputs/results/interaction_rt_accuracy.yml
@@ -31,6 +32,8 @@ analyse: $(ANALYSES)
 # One clear rule per analysis
 outputs/results/base_lm.yml: outputs/data/processed.csv scripts/02_base_lm.R
 	$(R_CMD) scripts/02_base_lm.R
+outputs/results/freq_rt_complexity.yml: outputs/data/processed.csv scripts/03_freq_rt_complexity.R
+	$(R_CMD) scripts/03_freq_rt_complexity.R
 # When you add an analysis, add a matching rule:
 # outputs/results/neighbour_density.yml: outputs/data/processed.csv scripts/03_neighbour_density.R
 # 	$(R_CMD) scripts/03_neighbour_density.R

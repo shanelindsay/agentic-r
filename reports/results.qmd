@@ -17,9 +17,11 @@ library(here)
 
 fmt3 <- function(x) sprintf("%.3f", x)
 fmt6 <- function(x) sprintf("%.6f", x)
+fmt1 <- function(x) sprintf("%.1f", x)
 
 cleaning <- yaml::read_yaml(here("outputs", "results", "cleaning.yml"))
 base <- yaml::read_yaml(here("outputs", "results", "base_lm.yml"))
+freq_complexity <- yaml::read_yaml(here("outputs", "results", "freq_rt_complexity.yml"))
 ```
 
 ## Cleaning
@@ -70,6 +72,28 @@ data.frame(
 
 R² `r fmt3(as.numeric(base$r2))`; adjusted R² `r fmt3(as.numeric(base$adj_r2))`; residual sigma `r fmt3(as.numeric(base$sigma))`.
 AIC `r fmt3(as.numeric(base$aic))`, BIC `r fmt3(as.numeric(base$bic))`.
+
+## Frequency effect with complexity adjustment
+
+The GAM with a smooth log-frequency term and linear stroke adjustment used `r freq_complexity$n_obs` characters. Moving from the 10th to 50th percentile in frequency speeds responses by about `r fmt1(freq_complexity$gains_ms$low_to_mid)` ms, whereas gains shrink to `r fmt1(freq_complexity$gains_ms$mid_to_high)` ms between the 50th and 90th percentile, indicating a flattening benefit at the top end.
+
+```{r}
+#| label: freq-quantiles-table
+quantile_rows <- freq_complexity$quantile_estimates
+data.frame(
+  quantile = names(quantile_rows),
+  log_freq = vapply(quantile_rows, function(x) x$log_freq, numeric(1)),
+  freq = vapply(quantile_rows, function(x) x$freq, numeric(1)),
+  rt_ms = vapply(quantile_rows, function(x) x$rt_ms, numeric(1)),
+  rt_ms_lower = vapply(quantile_rows, function(x) x$rt_ms_lower, numeric(1)),
+  rt_ms_upper = vapply(quantile_rows, function(x) x$rt_ms_upper, numeric(1))
+)
+```
+
+```{r}
+#| label: freq-plot
+knitr::include_graphics(here("outputs", "figures", "freq_rt_vs_frequency.png"))
+```
 
 <!--
 To add another analysis:

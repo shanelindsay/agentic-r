@@ -1,0 +1,32 @@
+id: freq_rt_complexity
+title: Frequency effect on response time with complexity adjustment
+model: gam(mean_log_rt ~ s(log_freq, k = 5) + strokes)
+n_obs: 3852
+median_strokes: 10.0
+smooth_df: 3.943
+gains_ms:
+  low_to_mid: 82.06
+  mid_to_high: 37.97
+quantile_estimates:
+  10th:
+    prob: 0.1
+    log_freq: 0.031
+    freq: 1.0315
+    rt_ms: 752.62
+    rt_ms_lower: 748.68
+    rt_ms_upper: 756.58
+  50th:
+    prob: 0.5
+    log_freq: 0.6051
+    freq: 1.8315
+    rt_ms: 670.56
+    rt_ms_lower: 667.11
+    rt_ms_upper: 674.03
+  90th:
+    prob: 0.9
+    log_freq: 2.1035
+    freq: 8.1949
+    rt_ms: 632.59
+    rt_ms_lower: 628.04
+    rt_ms_upper: 637.18
+timestamp: 2025-11-07T19:20:37+0000
