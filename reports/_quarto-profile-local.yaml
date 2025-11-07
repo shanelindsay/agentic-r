@@ -1,7 +1,0 @@
-project:
-  profile: local
-execute:
-  freeze: auto
-format:
-  html:
-    code-fold: true

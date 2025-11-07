@@ -1,0 +1,137 @@
+---
+title: "Agentic AI Demo Report"
+format:
+  html:
+    toc: true
+  pdf:
+    toc: true
+    pdf-engine: tectonic
+  docx: default
+  gfm: default
+freeze: true
+execute:
+  echo: true
+---
+
+```{r}
+#| label: setup
+#| message: false
+library(yaml)
+library(readr)
+library(dplyr)
+
+metrics_path <- here::here("outputs","results","metrics.yml")
+cleaning_path <- here::here("outputs","results","cleaning.yml")
+fig_path <- here::here("outputs","figures","rt_hist.png")
+freq_summary_path <- here::here("outputs","data","character_frequency_rt_summary.csv")
+freq_curve_path <- here::here("outputs","data","frequency_rt_curve.csv")
+freq_summary_text_path <- here::here("outputs","results","frequency_rt_summary.md")
+freq_fig_path <- here::here("outputs","figures","frequency_vs_rt.png")
+
+metrics <- yaml::read_yaml(metrics_path)
+cleaning <- yaml::read_yaml(cleaning_path)
+N <- as.integer(metrics$n_obs)
+
+# helpers for formatting
+fmt3 <- function(x) sprintf("%.3f", x)
+fmt6 <- function(x) sprintf("%.6f", x)
+```
+
+## Overview
+
+This report reads pre-computed outputs from the simple demo pipeline.
+
+- Processed data: `outputs/data/processed.csv`
+- Cleaning summary: `outputs/results/cleaning.yml`
+- Model metrics: `outputs/results/metrics.yml`
+
+## Cleaning Summary
+
+The pipeline kept `r cleaning$counts$kept_trials` of `r cleaning$counts$total_trials` trials (dropped `r cleaning$counts$dropped_trials`).
+Settings: correct-only = `r cleaning$trimming$correct_only`, RT range = `r cleaning$trimming$rt_min_ms`–`r cleaning$trimming$rt_max_ms` ms.
+
+```{r}
+data.frame(
+  setting = c("correct_only","rt_min_ms","rt_max_ms","total_trials","kept_trials","dropped_trials"),
+  value = c(
+    as.character(cleaning$trimming$correct_only),
+    cleaning$trimming$rt_min_ms,
+    cleaning$trimming$rt_max_ms,
+    cleaning$counts$total_trials,
+    cleaning$counts$kept_trials,
+    cleaning$counts$dropped_trials
+  )
+)
+
+```
+## RT Histogram (kept trials)
+
+```{r}
+knitr::include_graphics(fig_path)
+```
+
+## Model Metrics
+
+Model: `r metrics$model`  (N = `r N`)
+
+R² = `r fmt3(as.numeric(metrics$r2))`.
+
+```{r}
+#| label: optional-metrics
+cat(paste0("Adjusted R² = ", fmt3(as.numeric(metrics$adj_r2)), ".\n\n"))
+cat(paste0("Residual sigma = ", fmt3(as.numeric(metrics$sigma)), ".\n\n"))
+cat("Information criteria:\n\n")
+print(data.frame(
+  metric = c("AIC", "BIC"),
+  value = c(fmt3(as.numeric(metrics$aic)), fmt3(as.numeric(metrics$bic)))
+))
+```
+
+Coefficients:
+
+```{r}
+data.frame(
+  term = c("intercept","log_freq","strokes"),
+  estimate = c(
+    fmt6(as.numeric(metrics$coefficients$intercept)),
+    fmt6(as.numeric(metrics$coefficients$log_freq)),
+    fmt6(as.numeric(metrics$coefficients$strokes))
+  )
+)
+```
+
+## Frequency Effect on Recognition Speed
+
+```{r}
+#| label: frequency-load
+#| message: false
+character_frequency <- readr::read_csv(freq_summary_path, show_col_types = FALSE)
+frequency_curve <- readr::read_csv(freq_curve_path, show_col_types = FALSE)
+```
+
+```{r}
+#| label: frequency-figure
+knitr::include_graphics(freq_fig_path)
+```
+
+```{r}
+#| label: frequency-deciles
+character_frequency |>
+  mutate(decile = ntile(frequency, 10)) |>
+  group_by(decile) |>
+  summarise(
+    freq_range = sprintf(
+      "%s–%s",
+      scales::comma(round(min(frequency), 1)),
+      scales::comma(round(max(frequency), 1))
+    ),
+    mean_rt_ms = round(mean(mean_rt_ms), 1),
+    .groups = "drop"
+  )
+```
+
+```{r}
+#| label: frequency-summary
+#| results: asis
+cat(readr::read_file(freq_summary_text_path))
+```

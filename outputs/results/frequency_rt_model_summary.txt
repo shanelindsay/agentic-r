@@ -1,0 +1,24 @@
+
+Family: gaussian 
+Link function: identity 
+
+Formula:
+log_rt ~ s(log10_frequency, k = k_frequency) + s(strokes, k = k_strokes) + 
+    s(subject, bs = "re")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  6.50590    0.01706   381.4   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+                      edf Ref.df      F p-value    
+s(log10_frequency)  4.798  4.978 1596.0  <2e-16 ***
+s(strokes)          3.630  3.909  949.5  <2e-16 ***
+s(subject)         27.952 28.000  575.1  <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.242   Deviance explained = 24.2%
+fREML = -7975.5  Scale est. = 0.049729  n = 99138
