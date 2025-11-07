@@ -1,0 +1,12 @@
+model: lm(log_median_rt ~ log_freq + strokes)
+reference:
+  strokes: 6.0
+  predicted_rt_ms: 551.7836247
+max_penalty:
+  strokes: 12.0
+  penalty_ms: 117.2426523
+  predicted_rt_ms: 669.0262769
+slope:
+  rate_ms_per_stroke: 21.4487978
+  start_strokes: 11.9
+  end_strokes: 12.0

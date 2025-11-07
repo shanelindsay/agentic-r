@@ -1,0 +1,2070 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files and files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where content has been compressed (code blocks are separated by ⋮---- delimiter).
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: AGENTS.md, README.md, Makefile, R/**/*.R, scripts/**/*.R, scripts/**/*.sh, dev/**/*.sh, slides/**/*.qmd, slides/**/*.pptx, talk/**/*.md, talk/**/*.potx, env/**/*, configs/**/*.yml, configs/**/*.yaml, reports/**/*.qmd, skills/scientific-thinking/SCHEMA.md
+- Files matching these patterns are excluded: **/data/**, **/outputs/**, **/.git/**, **/node_modules/**, **/.venv/**, **/venv/**, **/.mamba/**
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Content has been compressed - code blocks are separated by ⋮---- delimiter
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+configs/
+  cleaning.yml
+dev/
+  run-in-env.sh
+reports/
+  analysis.qmd
+scripts/
+  01_prepare.R
+  02_model.R
+slides/
+  agentic-ai-concrete.qmd
+  agentic-ai.pptx
+  agentic-ai.qmd
+talk/
+  brief.md
+  nord-theme.potx
+  outline.md
+  talk-outline-only.md
+AGENTS.md
+Makefile
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="dev/run-in-env.sh">
+#!/usr/bin/env bash
+set -euo pipefail
+set +H
+
+# Unified wrapper: selects r-core/r-bayes per repo, handles HPC/cloud/desktop.
+
+# Repo root
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || realpath "$(dirname "$0")/..")"
+
+# Optional helper: locate a binary inside the env
+if [[ "${1:-}" == "--which" ]]; then
+  [[ $# -ge 2 ]] || { echo "Usage: $0 --which <binary>" >&2; exit 2; }
+  WHICH_BIN="$2"; shift 2
+  set -- bash -lc "command -v \"${WHICH_BIN}\""
+fi
+
+# Choose env family by repo flag, default to core
+STACK_FILE="$REPO_ROOT/env/STACK"
+STACK="$( [ -f "$STACK_FILE" ] && tr -d '\n\r ' < "$STACK_FILE" || echo core )"
+case "$STACK" in
+  bayes) ENV_FAMILY="r-bayes" ;;
+  core|*) ENV_FAMILY="r-core" ;;
+esac
+
+# Allow explicit override
+ENV_NAME="${RUN_ENV_NAME:-$ENV_FAMILY}"
+
+# Compute context (explicit beats auto)
+CTX="${COMPUTE_CONTEXT:-auto}"
+uname_s="$(uname -s 2>/dev/null || echo Unknown)"
+case "$CTX" in
+  auto)
+    if [[ -n "${SLURM_JOB_ID:-}" ]]; then CTX=hpc
+    elif [[ -f "/.dockerenv" || -f "/run/.containerenv" ]]; then CTX=cloud
+    elif [[ "$uname_s" == MINGW* || "$uname_s" == MSYS* || "$uname_s" == CYGWIN* ]]; then CTX=windows
+    else CTX=desktop
+    fi
+    ;;
+  hpc|cloud|desktop|windows) : ;;
+  *) echo "Unknown COMPUTE_CONTEXT=$CTX" >&2; exit 2;;
+esac
+
+# Prefix and caches per context
+case "$CTX" in
+  hpc)
+    # Use shared HPC root; keep caches local to node when possible
+    export MAMBA_ROOT_PREFIX="/extra/484251/mamba"
+    _tmp="${TMPDIR:-/local/conda-pkgs}"; mkdir -p "$_tmp" 2>/dev/null || true
+    mkdir -p "/extra/484251/mamba/pkgs" 2>/dev/null || true
+    export CONDA_PKGS_DIRS="${_tmp}:/extra/484251/mamba/pkgs"
+    ;;
+  cloud)
+    # Explicit root prefix avoids micromamba default-root checks on /root/.local/share/mamba
+    export MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-$HOME/.local/share/mamba}"
+    mkdir -p "$MAMBA_ROOT_PREFIX" 2>/dev/null || true
+    export CONDA_PKGS_DIRS="${CONDA_PKGS_DIRS:-/tmp/conda-pkgs}"
+    mkdir -p "$CONDA_PKGS_DIRS" 2>/dev/null || true
+    ;;
+  desktop|windows)
+    # Default to user local prefix unless overridden
+    export MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-$HOME/.local/share/mamba}"
+    mkdir -p "$MAMBA_ROOT_PREFIX" 2>/dev/null || true
+    ;;
+esac
+
+# Canonical specs (environment.yml is authoritative; env/r-core.yml kept for compatibility)
+BASE_SPEC="$REPO_ROOT/environment.yml"
+LEGACY_CORE_SPEC="$REPO_ROOT/env/r-core.yml"
+EXTRAS_SPEC="$REPO_ROOT/env/r-bayes-extras.yml"
+LOCK_SPEC="$REPO_ROOT/env/lock-linux-64.txt"
+
+if [[ ! -f "$BASE_SPEC" && -f "$LEGACY_CORE_SPEC" ]]; then
+  BASE_SPEC="$LEGACY_CORE_SPEC"
+fi
+
+# Optional dry-run: print plan and exit
+if [[ "${1:-}" == "--dry-run" || "${DRY_RUN:-0}" == "1" ]]; then
+  echo "stack=$STACK env_family=$ENV_FAMILY env_name=$ENV_NAME context=$CTX"
+  if [[ -n "${MAMBA_ROOT_PREFIX:-}" ]]; then
+    echo "root_prefix=$MAMBA_ROOT_PREFIX"
+    echo "planned_env_path=${MAMBA_ROOT_PREFIX}/envs/${ENV_NAME}"
+  else
+    echo "root_prefix=(user default)"
+    echo "planned_env_path=$HOME/.local/share/mamba/envs/${ENV_NAME}"
+  fi
+  echo "base_spec=$BASE_SPEC"
+  if [[ "$ENV_FAMILY" == "r-bayes" ]]; then
+    echo "extras_spec=$EXTRAS_SPEC"
+  fi
+  if [[ "$CTX" == cloud ]]; then
+    echo "ephemeral_path=/tmp/${ENV_NAME}-$$"
+  fi
+  exit 0
+fi
+
+# Micromamba detection (no auto-download on HPC)
+if ! command -v micromamba >/dev/null 2>&1; then
+  SCRIPT_DIR="$(dirname "$0")"
+  if [[ -x "${SCRIPT_DIR}/micromamba/bin/micromamba" ]]; then
+    export PATH="${SCRIPT_DIR}/micromamba/bin:$PATH"
+  else
+    if [[ "$CTX" == hpc ]]; then
+      echo "micromamba not found on HPC. Load a module or place it at dev/micromamba/bin." >&2
+      exit 1
+    fi
+    echo "Downloading micromamba to dev/micromamba/bin ..." >&2
+    uname_m="$(uname -m)" || uname_m=""
+    case "${uname_s}:${uname_m}" in
+      Linux:x86_64|Linux:amd64) MM_PLAT="linux-64" ;;
+      Linux:aarch64|Linux:arm64) MM_PLAT="linux-aarch64" ;;
+      Darwin:x86_64) MM_PLAT="osx-64" ;;
+      Darwin:arm64) MM_PLAT="osx-arm64" ;;
+      *) echo "Unsupported platform for micromamba bootstrap: ${uname_s}/${uname_m}" >&2; exit 1 ;;
+    esac
+    MM_URL="https://micro.mamba.pm/api/micromamba/${MM_PLAT}/latest"
+    TMPDIR_MM="$(mktemp -d)"; mkdir -p "${SCRIPT_DIR}/micromamba/bin"
+    curl -fsSL "$MM_URL" -o "${TMPDIR_MM}/micromamba.tar.bz2"
+    tar -xjf "${TMPDIR_MM}/micromamba.tar.bz2" -C "${TMPDIR_MM}" bin/micromamba
+    mv "${TMPDIR_MM}/bin/micromamba" "${SCRIPT_DIR}/micromamba/bin/micromamba"
+    chmod +x "${SCRIPT_DIR}/micromamba/bin/micromamba"; rm -rf "$TMPDIR_MM"
+    export PATH="${SCRIPT_DIR}/micromamba/bin:$PATH"
+  fi
+fi
+
+# Speed knobs
+export MAMBA_DOWNLOAD_THREADS=10
+_NPROC=$( (command -v nproc >/dev/null 2>&1 && nproc) || getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1 )
+export MAKEFLAGS="-j${_NPROC}"
+
+# Idempotency: if already inside the requested env, bypass micromamba
+ACTIVE_ENV="${MAMBA_DEFAULT_ENV:-${CONDA_DEFAULT_ENV:-}}"
+if [[ -n "${ACTIVE_ENV}" && "${ACTIVE_ENV}" == "${ENV_NAME}" ]]; then
+  exec "$@"
+fi
+
+ENV_PATH=""
+
+if [[ "$CTX" == cloud ]]; then
+  ENV_PATH="/tmp/${ENV_NAME}-$$"
+  if [[ ! -d "$ENV_PATH" ]]; then
+    if [[ "$ENV_NAME" == "r-core" ]]; then
+      SPEC_FILE="${LOCK_SPEC}"
+      [[ -f "$SPEC_FILE" ]] || SPEC_FILE="$BASE_SPEC"
+      echo "Creating cloud env at $ENV_PATH from $SPEC_FILE"
+      micromamba create -y -p "$ENV_PATH" -f "$SPEC_FILE"
+    else
+      SPEC_FILE="$BASE_SPEC"
+      echo "Creating cloud env at $ENV_PATH from $SPEC_FILE + bayes extras"
+      micromamba create -y -p "$ENV_PATH" -f "$SPEC_FILE"
+      [[ -f "$EXTRAS_SPEC" ]] && micromamba install -y -p "$ENV_PATH" -f "$EXTRAS_SPEC"
+    fi
+  fi
+else
+  # Persistent envs (HPC/desktop/windows)
+  if [[ -n "${MAMBA_ROOT_PREFIX:-}" && -d "${MAMBA_ROOT_PREFIX}/envs/${ENV_NAME}" ]]; then
+    ENV_PATH="${MAMBA_ROOT_PREFIX}/envs/${ENV_NAME}"
+  elif [[ -d "$HOME/.local/share/mamba/envs/${ENV_NAME}" ]]; then
+    ENV_PATH="$HOME/.local/share/mamba/envs/${ENV_NAME}"
+  else
+    # Fallback: try to discover via "micromamba env list"
+    ENV_PATH=$(micromamba env list | awk '{print $NF}' | grep -E "/${ENV_NAME}$" | head -1 || true)
+  fi
+
+  if [[ -z "$ENV_PATH" ]]; then
+    target_root="${MAMBA_ROOT_PREFIX:-$HOME/.local/share/mamba}"
+    mkdir -p "$target_root" 2>/dev/null || true
+    ENV_PATH="${target_root}/envs/${ENV_NAME}"
+    if [[ "$ENV_NAME" == "r-core" ]]; then
+      SPEC_FILE="$BASE_SPEC"
+      if [[ "$uname_s" == Linux* && -f "$LOCK_SPEC" ]]; then
+        SPEC_FILE="$LOCK_SPEC"
+      fi
+      echo "Creating env '${ENV_NAME}' in ${target_root} from ${SPEC_FILE}"
+      micromamba create -y -p "$ENV_PATH" -f "$SPEC_FILE"
+    else
+      echo "Creating env '${ENV_NAME}' in ${target_root} from ${BASE_SPEC} + bayes extras"
+      micromamba create -y -p "$ENV_PATH" -f "$BASE_SPEC"
+      [[ -f "$EXTRAS_SPEC" ]] && micromamba install -y -p "$ENV_PATH" -f "$EXTRAS_SPEC"
+    fi
+  fi
+fi
+
+# Ensure env bin is preferred to stabilize PATH on some clusters
+export PATH="${ENV_PATH}/bin:${PATH}"
+
+# Quarto adjustments for conda packaging (ensure deno/share paths)
+if [[ -x "${ENV_PATH}/bin/quarto" ]]; then
+  if [[ -z "${QUARTO_DENO:-}" && -x "${ENV_PATH}/bin/deno" && ! -x "${ENV_PATH}/bin/tools/x86_64/deno" && ! -x "${ENV_PATH}/bin/tools/aarch64/deno" ]]; then
+    export QUARTO_DENO="${ENV_PATH}/bin/deno"
+  fi
+  if [[ -z "${QUARTO_SHARE_PATH:-}" && -d "${ENV_PATH}/share/quarto" ]]; then
+    export QUARTO_SHARE_PATH="${ENV_PATH}/share/quarto"
+  fi
+fi
+# Ensure Quarto uses env R
+if [[ -x "${ENV_PATH}/bin/R" ]]; then export QUARTO_R="${ENV_PATH}/bin/R"; fi
+
+
+echo "Running in '${ENV_NAME}' at ${ENV_PATH}"
+exec micromamba run -p "${ENV_PATH}" "$@"
+</file>
+
+<file path="slides/agentic-ai-concrete.qmd">
+---
+title: "Agentic AI for Reproducible Language Science: From Prompt to Pipeline"
+author: "Shane Lindsay"
+format:
+  pptx:
+    reference-doc: ../talk/nord-theme.potx
+execute:
+  eval: false
+freeze: true
+toc: false
+output-dir: ../outputs/deliverables/agentic-ai-concrete
+---
+
+# AGENT TALK
+
+Shane Lindsay  
+University of Hull  
+https://github.com/shanelindsay/agentic-r/
+
+---
+
+# Agenda
+
+- Why now (spoiler: they finally work)
+- What is an agent
+- Demo: agents and reproducible research patterns
+- Practical patterns you can steal
+
+---
+
+# Pre-requisites
+
+Assume you have used LLM chatbots, for example ChatGPT, ==探索未至之境==  
+Assume knowledge of R (applies to Python and other tools too)
+
+---
+
+# Why agents now
+
+- LLM models are now smart enough for multi-step, tool-using tasks
+- They are cheap enough to be practical for students and labs
+- Agents are accessible
+- The technology is useful for everyday research work
+
+**Provocation**: By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
+
+---
+
+# What is an agent
+
+- General purpose LLM that lives inside a computer
+- Read and write access to the file system, with access to bash or PowerShell
+- Whatever you can do, it can do, with guardrails and approvals
+- Can work autonomously for typically less than 20 minutes
+- Search the web, write code, execute it, write it up
+- Full end to end scientific process  
+  - Today focused on analyses
+
+---
+
+# Costs
+
+- One knob: fast and rough versus slow and smart
+- Daily heavy use: $200 per month
+- Moderate use: $100 per month
+- Light use: $20 per month
+- Free tiers exist
+
+---
+
+# Examples
+
+- US: Codex (OpenAI), Claude Code (Anthropic), Gemini (Google), Cursor, Copilot (Microsoft)
+- China: Kimi K2, Qwen 3, GLM 4.5
+- Currently: OpenAI Codex is smartest, Claude Code 4.5 second, GLM or K2 best for cost
+
+---
+
+# Promise of agents
+
+- Increase speed
+- Increase capability
+
+---
+
+# Perils of agents
+
+- Errors
+- Loss of control and responsibility
+- Atrophy of skills
+- Technical demands and complexity (tech debt)
+
+---
+
+# Using agents
+
+- Think of an agent as a new lab member arriving cold to your research project
+- Very keen, very fast, very smart, sometimes wise, sometimes also wrong
+- Agents work best when projects are structured, documented and runnable
+- Structure encourages consistent patterns in your workflows
+
+---
+
+# Why reproducible research
+
+- Verify findings, others can validate your results
+- Reduce bias through transparency in methods
+- Catch errors, community review improves quality
+- Preserve knowledge beyond individual researchers
+- Increasingly required by funding agencies and journals
+
+---
+
+# Reproducible research and agentic AI are best friends
+
+- Research codebase lifecycle: plan → execute → review → share → re-run
+- Reproducibility means others, including agents, can repeat the same steps and get the same artefacts
+- Agents support reproducibility when outputs are scripted, logged and text based
+
+---
+
+# Coding patterns and how agents interact
+
+- Monolithic 1000 line script: quick start, fragile for change, sprawl, hard to understand and debug
+- Numbered scripts: clearer workflow, smaller functional units
+- Makefile orchestrated scripts: explicit dependencies, deterministic runs
+
+**Goal**: press a button, raw data transformed directly to numbers in a manuscript
+
+---
+
+# Containers and predictability
+
+- Containers are cloud based Unix environments that can be spun up and thrown away
+- Agents are stateless across sessions, containers provide a predictable starting point
+- If a stranger can run the repo from the documentation, an agent can too
+- Running agents in containers is safer, they operate inside the container
+
+---
+
+# GitHub
+
+- GitHub provides version tracking
+- Monitor and approve any changes with pull requests
+- Protect work from being overwritten, history is always saved
+
+---
+
+# shanelindsay/agentic-r GitHub repo
+
+- `AGENTS.md`: how the agent should work in this repo
+- `dev/run-in-env.sh`: get R working using micromamba
+- `environment.yml`: R version and packages to use (numbered, reproducible)
+- Agents are told to use the wrapper to run scripts
+
+---
+
+# Workflow
+
+- Makefile and two small R scripts (`01_prepare.R`, `02_model.R`)
+- `data/raw`, `data/processed`, `results/metrics.yml`
+- Explain changes in the PR description
+
+---
+
+# Example: Lexical Decision in Chinese
+
+- Baseline: run the pipeline once to produce `metrics.yml`
+- Demo data: a tiny, lawful slice of a lexical decision dataset with lexical predictors
+- Backup: pre-baked PR and a 30 to 45 second recording of a successful run
+
+---
+
+# Agent demo: Builder
+
+- Agent prompt: add one predictor, for example neighbourhood, update `02_model.R`, write the new coefficient to `results/metrics.yml`, update `README`
+- You re-run the pipeline deterministically via the wrapper and Makefile
+- Show the small, scoped diff in `metrics.yml`
+
+---
+
+# Agent demo: Review
+
+- Second agent reads the PR diff and `metrics.yml` and writes a review
+- Human reviews the agent review and approves or requests changes
+- Loop
+
+---
+
+# Interactive versus script based
+
+- Explore interactively if needed, then commit changes as scripts or Makefile targets for determinism and reproducibility
+- Store results as diffable tables for easy review
+
+---
+
+# GitHub review
+
+- Branch, PR, concise description, human review, merge
+- Keep commits small and well scoped, include one line rationales
+- Use PR comments for agent checklists and reviewer notes
+
+---
+
+# End to end reporting
+
+- Manuscript or Quarto report reads values from `results/*`
+- This keeps numbers traceable and updates transparent
+
+---
+
+# Agent patterns to copy
+
+- Builder: proposes and edits code
+- Checker: audits diffs and outputs
+- Critic (optional): proposes tests or diagnostics
+- Humans remain the final approvers
+
+---
+
+# Where to start
+
+- Pick one stage, cleaning or modelling or reporting, and start small
+- Keep tasks atomic
+- Measure time saved against review effort
+
+---
+
+# Practical tips
+
+- Short, explicit prompts, give file paths and desired outputs
+- Make outputs diffable (CSV or YAML), keep raw data read only
+- Pre-record a fallback run for live demos
+
+---
+
+# Memes and memory aids
+
+- Single tasteful meme with a one line caption to reinforce a point
+- Humour lines: “Agents do not bring cake, but they write the README”; “Keen RA, occasional hallucinations”
+
+---
+
+# Take-home
+
+- Agents expand what a small team can do
+- Structure, container plus Makefile plus scripts plus PRs, keeps agents honest
+- Start small, review everything, iterate responsibly
+
+---
+
+# Reserve or buffer
+
+- Space for extra demo tweaks, audience questions, or a second quick agent change
+- If unused, recap the main points
+
+---
+
+# Q and A
+
+- Show repo URL or QR and contact details
+- Invite concrete questions, for example “Where would you start” or “What template would help”
+</file>
+
+<file path="talk/brief.md">
+https://mp.weixin.qq.com/s/4ZKaH9URctFxW57cIfEPUw
+
+Dear Dr. Lindsay,
+
+Following my call with Prof. Liang earlier today, there is one talk invitation about you:
+
+She would like to invite you to give an around 40-minute talk at their forum, either on AI & Clinical Linguistics or on an AI-informed, clinically oriented psychology/neuroscience topic. The assumption on their side is that the format would be online. The date of the Forum is 07.11.2025- 09.11.2025.
+
+If you are willing to have the talk, I’ll then revert to Prof. Liang and coordinate the logistics.
+
+Best wishes,
+Yumeng
+
+Here’s a clean English translation. I’ve kept the structure and key terms faithful to the original.
+
+# 2025 Nanjing Normal University Doctoral and Master’s Forum on Language Development and Disorders (First Circular)
+
+## Forum overview
+
+Since 2018, our university has successfully held a series of summer schools and innovation forums centred on research and application in clinical linguistics, earning wide praise and strong recognition from postgraduate students and early-career scholars in China and abroad. In recent years, under the impetus of artificial intelligence, research on language development and disorders has been shifting towards digital and intelligent paradigms. AI not only provides innovative tools for first-language acquisition and second-language teaching, it also shows irreplaceable value in early screening and precise diagnosis of language disorders and in barrier-free communication for people with language impairments.
+
+To accelerate deep integration between AI technologies and language-health services, and to promote an intelligent dissemination system for Chinese language and culture, the “2025 Nanjing Normal University Doctoral and Master’s Forum on Language Development and Disorders,” hosted by the School of Chinese Language and Literature at Nanjing Normal University, organised by the University’s Research Centre for Language Development and Disorders, and co-organised by the School of International Cultural Education and the Neurolinguistics Branch of the Chinese Association for the Modernisation of the Chinese Language, is scheduled to take place in the ancient capital of Nanjing from 7 to 9 November 2025.
+
+This forum focuses on frontier topics in language development and disorders, integrating perspectives across linguistics, medicine, and artificial intelligence. It will be organised around three themes: “Frontier, Intelligence, Service.” The organising committee warmly welcomes PhD and Master’s students engaged in research on language development and disorders, including those in linguistics, neuroscience, rehabilitation medicine, AI and related disciplines.
+
+## Hosts and organisers
+
+* **Host:** School of Chinese Language and Literature, Nanjing Normal University
+* **Organiser:** Research Centre for Language Development and Disorders, Nanjing Normal University
+* **Co-organisers:** School of International Cultural Education, Nanjing Normal University; Neurolinguistics Research Branch, Chinese Association for the Modernisation of the Chinese Language
+
+## Forum topics
+
+Research on language development and disorders from the perspective of “Frontier, Intelligence, Service,” including:
+
+1. Chinese language acquisition and ageing
+2. Language disorders and dyslexia
+3. International Chinese language education integrating humanities and technology
+4. Language assessment and intervention with assistive technologies
+5. Other related topics
+
+## Schedule
+
+* **Convenor:** Professor Liang Dandan
+* **Dates:** 7–9 November 2025
+* **Venue:** Suiyuan Campus, Nanjing Normal University, 122 Ninghai Road, Gulou District, Nanjing
+* **Accommodation:** Nanshan Experts’ Building Hotel, 122 Ninghai Road, Gulou District, Nanjing
+
+## Participation
+
+The forum is primarily aimed at current PhD students, and outstanding Master’s students are also welcome to apply. An online channel will be provided for overseas students who cannot attend in person. Interested university teachers, students, clinicians, and professionals from related sectors are welcome to audit and participate.
+
+All participants, including auditors, must email the **registration form** and either a **full paper** or a **detailed abstract of about 1,000 characters** to **[languagefz@163.com](mailto:languagefz@163.com)** **by 30 October**. Please **use the email subject line** “2025年博硕论坛+姓名” (2025 Doctoral & Master’s Forum + Your Name). Full-paper submissions are encouraged.
+
+Submissions will be reviewed, and excellent papers or abstracts will be selected. **Free accommodation** will be provided for non-local students whose submissions are selected for parallel-session presentations (**limited to one author per paper**). The forum will invite renowned experts in relevant fields to comment on the papers presented in the parallel sessions, and **outstanding papers will be selected and awarded certificates**. There is **no registration fee**. Refreshments and **working lunches** will be provided for all attendees.
+
+* **Registration form link:** 2025年语言发展与障碍博硕论坛回执单.docx
+* **Contacts:** 于文勃 (15651011956), 张钱雨桐 (17749574044)
+
+## Previous events
+
+[Section indicates a retrospective of past forums.]
+
+**Layout:** 陈心怡, 杨雯惠
+**Review:** 乐怡婷, 杨鸿飞
+
+---
+
+### Quick at-a-glance
+
+* **Deadline:** 30 October 2025
+* **Event:** 7–9 November 2025, Suiyuan Campus, NNU, Nanjing
+* **Submit to:** [languagefz@163.com](mailto:languagefz@163.com)
+* **What to send:** Registration form + full paper or ~1,000-character abstract
+* **Costs:** No fee; tea breaks and working lunch provided; free hotel for selected non-local student presenters (one author per paper)
+
+---
+
+translate from gpt:
+ 
+2025 Nanjing Normal University Forum for Doctoral and Master’s Students on Language Development and Disorders (Second Circular)
+Since 2018, our university has successfully run a series of summer schools and innovation forums centred on clinical linguistics research and its applications, earning wide acclaim from graduate students and early-career scholars in China and abroad. To accelerate the deep integration of artificial intelligence with language-health services and to advance an intelligent communication system for Chinese culture, the “2025 Nanjing Normal University Forum on Language Development and Disorders for Doctoral and Master’s Students” will be held in the ancient capital of Nanjing from 7 to 9 November 2025. The forum is hosted by the School of Chinese Language and Literature, Nanjing Normal University (NNU); organised by the NNU Research Centre for Language Development and Disorders; and co-organised by the College of International Cultural Education, NNU, the Neurolinguistics Research Committee of the Chinese Association for the Modernisation of Language, and the Medical Language and Translation Research Committee of the Chinese Association for Comparative Studies of English and Chinese.
+This forum focuses on frontier topics in language development and disorders, integrating cross-disciplinary perspectives from linguistics, medicine and artificial intelligence under the three themes of “Frontier · Intelligence · Service.” Doctoral and master’s students in relevant areas (including linguistics, neuroscience, rehabilitation medicine, artificial intelligence, and related disciplines) are warmly invited to participate.
+All participants (including auditors) must submit the registration form and either a full paper or a detailed abstract of about 1,000 words to languagefz@163.com by 30 October. Please use the email subject “2025 Doctoral–Master Forum + [Your Name]”. Full-paper submissions are encouraged. Submissions will be competitively reviewed; non-local students selected for parallel-session presentations will be provided free accommodation (limited to one author per paper). Distinguished experts will comment on the parallel-session papers, and Outstanding Paper awards will be presented with certificates. No registration fee will be charged, and working lunches will be provided for all participants.
+Forum Theme
+Research on Language Development and Disorders from the Perspective of “Frontier · Intelligence · Service.”
+Suggested Topics
+Chinese language acquisition and ageing
+Language disorders and reading/writing disorders
+International Chinese education at the nexus of the humanities and technology
+Language assessment and intervention from the perspective of technology-enabled disability support
+Other related topics
+Workshops
+Near-infrared spectroscopy (NIRS) workshop
+Clinical linguistics workshop series
+Schedule
+Convenor: Prof. Liang Dandan
+Dates: 7–9 November 2025 (the forum will conclude at noon on 9 November)
+Venue: Suiyuan Campus, Nanjing Normal University, No. 122 Ninghai Road, Gulou District, Nanjing
+Accommodation: Nanshan Expert Building Hotel, No. 122 Ninghai Road, Gulou District, Nanjing
+Invited Speakers
+(in alphabetical order by surname/pinyin)
+Liang Dandan — Tier-2 Professor and Doctoral Supervisor; Vice-Chair and Secretary-General of the Neurolinguistics Research Committee of the Chinese Association for the Modernisation of Language; Vice-President of the Medical Language and Translation Research Committee. Author of several monographs, including An Introduction to Childhood Language Disorders, Intervention for Childhood Language Disorders, and Studies on Childhood Language Disorders and Acquisition; over 70 papers in SSCI/CSSCI journals. Awards include Second Prize in the 9th Outstanding Achievements in Scientific Research in Higher Education Institutions (Humanities and Social Sciences), and Second Prize in the 15th and 16th Jiangsu Provincial Awards for Outstanding Achievements in Philosophy and Social Sciences. Has led major and key projects of the National Social Science Fund (NSSF), a National Publication Fund project, and major tendered sub-projects; currently leading an NSSF key project and a major tendered sub-project. Selected for talent programmes such as the Jiangsu “333 High-Level Talent Programme” (mid-career leaders), Jiangsu Social Science Talents, and the Jiangsu “Qinglan Project” (mid-career academic leaders).
+Liu Duo — PhD (The Chinese University of Hong Kong), Associate Professor and Doctoral Supervisor; Associate Head, Department of Special Education and Counselling, The Education University of Hong Kong. Research focuses on the development of Chinese children’s reading and writing abilities and related factors, Chinese dyslexia, and learning difficulties. Author of 70+ international journal papers; frequent presenter at international conferences. Associate Editor of Journal of Learning Disabilities and Reading and Writing; Editorial Board and Guest Associate Editor of Frontiers in Education (Special Education Section); Board Member of the Association for Reading and Writing in Asia; Voting Member of the Society for the Scientific Study of Reading (SSSR); reviewer for the National Natural Science Foundation of China and the Hong Kong Research Grants Council. Recipient of the inaugural ARWA Mid-Career Award.
+Qi Feng — Professor and Doctoral Supervisor; Head of the Department of Chinese Language, East China Normal University; Researcher at the National Language Commission’s Global Chinese Development Research Centre; Executive Editor of Global Chinese Development Research; Pujiang Talent (Shanghai). Serves as expert reviewer for NSSF projects, achievement evaluation, and national discipline assessments in Chinese Language and Literature. Has published 60+ papers in Linguistic Sciences, Language Teaching and Linguistic Studies, Chinese Teaching in the World, Applied Linguistics, and other CSSCI/specialist journals; multiple papers fully reprinted by Renmin University of China Reprinted Materials (Linguistics). Author of Focus in Modern Chinese (included in the Tsinghua Linguistics PhD Series, Zhongxi Book Company); co-author of Special Topics in Modern Chinese, New Advanced Chinese Course, and other textbooks. Invited speaker at City University of Hong Kong, University of Cambridge, Sun Yat-sen University, Tsinghua University, Beijing Language and Culture University (Young Scholars Forum of Chinese Teaching in the World), Fudan University, and others.
+Wang Lin — Chief Physician (MD), Director of the Department of Child Health, Affiliated Children’s Hospital of the Capital Institute of Pediatrics. Clinical doctorate from Peking University Health Science Center; senior visiting scholar at Harvard University, the University of Chicago, and the University of Washington. With over 20 years of clinical practice, areas of expertise include child growth and development, language and developmental behaviour, child psychological development, learning difficulties, immunisation for children with diseases, diagnosis and treatment of intellectual disability, ADHD and learning problems, endocrinology and inborn errors of metabolism, and autism spectrum disorder. Holds multiple national/municipal professional roles; Editorial Board member of Chinese Journal of Pediatrics, Chinese Journal of Child Health Care, Chinese Journal of Pediatric Hematology and Oncology, Rare and Uncommon Diseases, among others. Honours include “Dengfeng” Talent (4th cohort) of the Beijing Hospital Management Center, High-level Public Health Talent of the Beijing Municipal Health Commission, Top 100 in the Chinese Medical Science and Technology Papers, Science and Technology Innovation Award of the Chinese Hospital Association, and Baidu Health—Annual Outstanding Contribution Expert. Recognised with the “National Famous Doctor—Exemplary Style Award” (third edition) for establishing an immunisation strategy tailored to children with diseases in China.
+Yang Yiming — Distinguished Changjiang Scholar; National Teaching Master under the “Ten Thousand Talents Plan”; Leader of a National Huang Danian-style Teaching Team; Expert entitled to the State Council Special Allowance; Chair of the University Academic Committee, Jiangsu Normal University; Director of the National Collaborative Innovation Centre for Language Competence (Ministry–Province Co-construction, Project 2011); Director of the National Experimental Teaching Demonstration Centre for Language Science and Art; Dean of the Advanced Institute of Language Competence (National Language Commission); Director of the Jiangsu Key Laboratory of Language and Neurocognitive Science; Editor-in-Chief of Linguistic Sciences; former Vice-President of Jiangsu Normal University. Long engaged in neurolinguistics, theoretical linguistics and the history of Chinese; has led multiple commissioned major and major NSSF projects, 973 Programme tasks, NSSF key projects, and NSFC projects. Author of 200+ papers in outlets including Cell sub-journals, PNAS, Brain, Cognition, Social Sciences in China, Science in China, and Xinhua Digest, and over 10 books. Awards include the First Prize of the National Teaching Achievement Award and the First Prize of the MOE Humanities and Social Sciences Outstanding Achievement Award.
+ 
+Yang Yiming is the phd suporvisor of Liang Dandan( prof liang)
+ 
+
+I could not open the WeChat link through my browser tool to view the embedded images. If you want the text in any images or posters translated too, attach screenshots and I will translate those as well.
+
+
+Most likely you mean **Prof. Dandan Liang (梁丹丹)** at **Nanjing Normal University** rather than Nanjing University. She is a professor and doctoral supervisor in the School of Chinese Language and Literature, widely described as working in **clinical linguistics/neurolinguistics** with a focus on **language development and disorders** including autism, developmental dyslexia and aphasia. She also convenes the recurring “Language Development and Disorders” postgraduate forum at NNU. ([news.njnu.edu.cn][1])
+
+**Key pointers**
+
+* Affiliation: School of Chinese Language and Literature, Nanjing Normal University; professor and PhD supervisor; Vice Dean in some reports. ([PubMed][2])
+* Topic fit: Talks and news items consistently present her work as clinical linguistics and developmental language research. ([nau.edu.cn][3])
+* Recent publication listing her NNU affiliation in a developmental language study. ([PubMed][2])
+
+**How to reach her**
+
+* Corresponding-author email used on a ChinaXiv preprint: **[ldd233@163.com](mailto:ldd233@163.com)**. ([ChinaXiv][4])
+* College office site for general enquiries: NNU College of Chinese Language & Literature. ([360教育在线][5])
+
+If you actually meant **Nanjing University (NJU)**, I cannot find a female Prof. Liang in **clinical linguistics** there; the clinical/developmental linguistics profile matches Prof. **Dandan Liang** at **Nanjing Normal University**. Want me to draft a short introductory email in English and Chinese?
+
+[1]: https://news.njnu.edu.cn/info/1046/99801.htm?utm_source=chatgpt.com "“面向临床语言学的汉语学龄前儿童语言发展研究” 国家社科基金重点 ..."
+[2]: https://pubmed.ncbi.nlm.nih.gov/40882139/?utm_source=chatgpt.com "Focus Comprehension in Mandarin-Speaking Children ..."
+[3]: https://www.nau.edu.cn/_t43/2019/1018/c5787a59237/page.htm?utm_source=chatgpt.com "南京师范大学梁丹丹教授来我校开展学术讲座"
+[4]: https://chinaxiv.org/abs/201910.00027v1?utm_source=chatgpt.com "汉语普通话声调感知的老年化效应:来自ERP的证据"
+[5]: https://kaoyan.360eol.com/school/news/211/7242?utm_source=chatgpt.com "南京师范大学各学院联系方式"
+
+Focus Comprehension in Mandarin-Speaking Children Aged 6-12 Years With Cochlear Implants Compared to Children With Typical Development.
+Pan Y, Song Y, Zhang Y, Liang D.
+J Speech Lang Hear Res. 2025 Sep 10;68(9):4376-4390. doi: 10.1044/2025_JSLHR-24-00619. Epub 2025 Aug 29.
+PMID: 40882139
+
+2
+Cite
+ 
+Discourse production of mandarin-speaking children with high-functioning autism: The effect of mental and action verbs' semantic-pragmatic features.
+Song Y, Jia Z, Liu S, Liang D.
+J Commun Disord. 2017 Nov;70:12-24. doi: 10.1016/j.jcomdis.2017.10.002. Epub 2017 Oct 16.
+PMID: 29054073
+
+3
+Cite
+ 
+Emotional prosody recognition in children with high-functioning autism under the influence of emotional intensity: Based on the perspective of emotional dimension theory.
+Song Y, Zhong J, Jia Z, Liang D.
+J Commun Disord. 2020 Nov-Dec;88:106032. doi: 10.1016/j.jcomdis.2020.106032. Epub 2020 Aug 17.
+PMID: 32937183
+
+4
+Cite
+ 
+Lexical Access in Preschool Mandarin-Speaking Children With Cochlear Implants.
+Shi X, Wu S, Liang D.
+J Speech Lang Hear Res. 2022 Dec 12;65(12):4761-4773. doi: 10.1044/2022_JSLHR-21-00671. Epub 2022 Nov 23.
+PMID: 36417769
+
+5
+Cite
+ 
+The link between the factuality of verb and the theory of mind ability of Mandarin-speaking children with high-functioning autism.
+Yu W, Cheng M, Liang D.
+Int J Lang Commun Disord. 2023 Nov-Dec;58(6):1927-1938. doi: 10.1111/1460-6984.12910. Epub 2023 Jun 1.
+
+
+https://pubmed.ncbi.nlm.nih.gov/?term=Liang+D&cauthor_id=40882139
+
+https://arxiv.org/html/2510.22254v1
+</file>
+
+<file path="talk/outline.md">
+```qmd
+---
+title: "Agentic AI for reproducible language science: from prompt to pipeline"
+format:
+  pptx:
+    reference-doc: template.potx
+execute:
+  eval: false
+toc: false
+---
+
+# Section Header: Why agents now
+::: {.notes}
+Timing: 0:00–1:30. Set the capability frame and the “Ask → Plan → Do → Record” loop.
+:::
+
+---
+
+# From chat to agents
+::: {.notes}
+Timing: 1:30–3:00. Define agents as planner, tool‑caller, executor, reporter.
+:::
+- Agents plan multi‑step work.
+- They call external tools.
+- They run code and scripts.
+- They record actions and results.
+- Capability expands; speed increases.
+![Simple agent loop schematic (non‑generative)](placeholder.png)
+
+---
+
+# What you will learn today
+::: {.notes}
+Timing: 3:00–4:00. Emphasise that it is R‑focused but portable.
+:::
+- Where agents add capability.
+- Pragmatic pitfalls and mitigations.
+- Run a containerised R workflow.
+- Use GitHub for visible review.
+
+---
+
+# Section Header: Landscape and access
+::: {.notes}
+Timing: 4:00–4:20. Name systems briefly; no deep dive.
+:::
+---
+
+# Systems you may encounter
+::: {.notes}
+Timing: 4:20–5:30. Keep brand‑agnostic; students use what is available.
+:::
+- Claude Code (web/IDE).
+- Cursor (IDE agent mode).
+- Coding agents in editors.
+- Choose what your lab supports.
+![Claude Code, Cursor, editor logos (insert non‑generative logos)](placeholder.png)
+
+---
+
+# China‑aware options (one slide)
+::: {.notes}
+Timing: 5:30–6:30. Mention without prices; institutions vary.
+:::
+- Qwen models (AliCloud).
+- Kimi (Moonshot AI).
+- GLM (Zhipu AI).
+- ERNIE, Hunyuan, Doubao.
+![Provider logos grid (insert non‑generative logos)](placeholder.png)
+
+---
+
+# Thinking about costs
+::: {.notes}
+Timing: 6:30–8:00. Teach patterns, not price lists.
+:::
+- Three patterns: subscription, tokens, editor.
+- Iterations drive spend.
+- Keep prompts short.
+- Prefer small models for drafts.
+![Token cost formula schematic (non‑generative)](placeholder.png)
+
+---
+
+# Section Header: Promise and pitfalls
+::: {.notes}
+Timing: 8:00–8:15. Shift from tools to practice.
+:::
+---
+
+# What gets better now
+::: {.notes}
+Timing: 8:15–9:30. Capability and provenance, not hype.
+:::
+- Attempt larger tasks.
+- Explore alternatives quickly.
+- Faster first drafts.
+- Traceable, recorded changes.
+
+---
+
+# Pitfalls you will meet
+::: {.notes}
+Timing: 9:30–11:00. Keep pragmatic and actionable.
+:::
+- Overreach beyond expertise.
+- Skill drift if you stop reading.
+- Cost creep from many runs.
+- Mitigate: small tasks, tests, review.
+
+---
+
+# Section Header: Methods tutorial (R‑focused)
+::: {.notes}
+Timing: 11:00–11:15. From ideas to one runnable pipeline.
+:::
+---
+
+# Why containers help agents
+::: {.notes}
+Timing: 11:15–12:30. Agents arrive “cold”; containers standardise starts.
+:::
+- Predictable start each run.
+- Self‑documenting projects win.
+- If a stranger can run it…
+- …an agent can run it.
+![Container concept icon (non‑generative)](placeholder.png)
+
+---
+
+# Repo skeleton (demo)
+::: {.notes}
+Timing: 12:30–13:30. Show structure you will actually run.
+:::
+- README with quickstart.
+- Makefile orchestration.
+- R scripts for steps.
+- Raw, processed, results folders.
+- Wrapper script to run R.
+![Repository tree schematic (non‑generative)](placeholder.png)
+
+---
+
+# One pipeline, end‑to‑end
+::: {.notes}
+Timing: 13:30–14:45. Makefile first; upgrade later if needed.
+:::
+- Simple Makefile rules.
+- Deterministic script runs.
+- Diffable result files.
+- Upgrade path exists later.
+
+---
+
+# Section Header: Example — lexical decision (Option A)
+::: {.notes}
+Timing: 14:45–15:00. Language‑science example; tiny lawful slices.
+:::
+---
+
+# Task and data (tiny slices)
+::: {.notes}
+Timing: 15:00–16:00. Keep datasets small; ship locally.
+:::
+- Behaviour: lexical decision RTs.
+- Predictors: frequency, strokes.
+- Join SCLP with CLD rows.
+- Aim: small, fast, illustrative.
+![Lexical decision schematic (non‑generative)](placeholder.png)
+
+---
+
+# Demo: what you will run
+::: {.notes}
+Timing: 16:00–17:00. Prepare a fallback recording.
+:::
+- Clone the repo.
+- Run `make` once.
+- View `metrics.yml`.
+- Keep a short screencast.
+
+---
+
+# Live steps (5–6 minutes)
+::: {.notes}
+Timing: 17:00–23:00. Small change + re‑run + visible diff.
+:::
+- Run `make` to baseline.
+- Agent adds one predictor.
+- Re‑run `make` deterministically.
+- Show diff in `metrics.yml`.
+- Commit and open a PR.
+
+---
+
+# Interactive vs script‑based
+::: {.notes}
+Timing: 23:00–24:30. Draft interactively, execute by script.
+:::
+- Draft with an agent.
+- Execute via scripts.
+- Scripts beat ad‑hoc REPL.
+- Reproducibility first.
+
+---
+
+# Section Header: GitHub basics
+::: {.notes}
+Timing: 24:30–24:45. Light‑touch process; keep humans engaged.
+:::
+---
+
+# Keep the human in the loop
+::: {.notes}
+Timing: 24:45–26:15. One screenshot of a PR with a small diff.
+:::
+- Branch → PR → review.
+- Scoped commits with notes.
+- Small, reviewable changes.
+- Merge with confidence.
+![PR with small YAML diff (non‑generative)](placeholder.png)
+
+---
+
+# End‑to‑end reporting
+::: {.notes}
+Timing: 26:15–27:45. Manuscript pulls numbers from results tables.
+:::
+- Results as CSV/YAML.
+- Manuscript reads tables.
+- Changes stay transparent.
+![Manuscript numbers from tables schematic (non‑generative)](placeholder.png)
+
+---
+
+# Section Header: Wrap‑up and questions
+::: {.notes}
+Timing: 27:45–28:00. Leave time buffer for Q&A up to 40:00.
+:::
+---
+
+# Take‑home
+::: {.notes}
+Timing: 28:00–29:00. Close with four rules of thumb.
+:::
+- Agents expand capability.
+- Structure keeps them honest.
+- Container + Makefile + scripts.
+- GitHub review for trust.
+
+---
+
+# Q&A
+::: {.notes}
+Timing: 29:00–40:00. Keep a slide visible with repo URL and a QR code placeholder.
+:::
+![Repo URL / QR code placeholder (non‑generative)](placeholder.png)
+```
+</file>
+
+<file path="scripts/01_prepare.R">
+## scripts/01_prepare.R
+## Read trial-level SCLP slice + CLD predictors; aggregate and join.
+## Input:  SCLP trials (full or sample) and CLD (full or sample)
+## Output: outputs/data/processed.csv (+ filtered trials, YAML, figure)
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(readr)
+  library(purrr)
+  library(tidyr)
+  library(ggplot2)
+  library(glue)
+  library(yaml)
+  library(fs)
+  library(here)
+  library(tools)
+})
+
+walk(c("outputs/data", "outputs/results", "outputs/figures"), ~fs::dir_create(here(.x)))
+
+cfg_path <- here("configs", "cleaning.yml")
+if (!file.exists(cfg_path)) stop("Missing configs/cleaning.yml at: ", cfg_path)
+cfg <- yaml::read_yaml(cfg_path)
+
+keep_correct <- isTRUE(cfg$correct_only)
+rt_min <- as.numeric(cfg$rt_min_ms)
+rt_max <- as.numeric(cfg$rt_max_ms)
+if (!is.finite(rt_min) || !is.finite(rt_max) || !(rt_min < rt_max)) {
+  stop("Bad RT bounds in configs/cleaning.yml: rt_min_ms=", rt_min, " rt_max_ms=", rt_max)
+}
+
+raw_trials_path <- here(cfg$raw_trials)
+cld_path <- here(cfg$cld_file)
+if (!file.exists(raw_trials_path)) stop("Missing SCLP trials at: ", raw_trials_path)
+if (!file.exists(cld_path))       stop("Missing CLD file at: ", cld_path)
+
+# --- Load SCLP trials (support 'sclp_full' and 'sample') ---
+sclp_raw <- readr::read_csv(raw_trials_path, show_col_types = FALSE)
+if (identical(cfg$raw_type, "sclp_full")) {
+  # Expect columns: item, lexicality, accuracy, rt
+  needed <- c("item", "lexicality", "accuracy", "rt")
+  if (!all(needed %in% names(sclp_raw))) {
+    stop("SCLP full file missing columns: ", paste(setdiff(needed, names(sclp_raw)), collapse = ", "))
+  }
+  sclp_raw <- dplyr::filter(sclp_raw, lexicality == "character")
+  sclp <- dplyr::transmute(sclp_raw, char = item, rt_ms = rt, correct = accuracy)
+} else if (identical(cfg$raw_type, "sample")) {
+  if (!all(c("char", "rt_ms", "correct") %in% names(sclp_raw))) {
+    stop("Sample SCLP must have columns: char, rt_ms, correct")
+  }
+  sclp <- dplyr::select(sclp_raw, char, rt_ms, correct)
+} else {
+  stop("Unknown raw_type in configs/cleaning.yml: ", cfg$raw_type)
+}
+
+# Enforce types and single-character rows
+sclp <- sclp %>%
+  mutate(
+    char = as.character(char),
+    rt_ms = suppressWarnings(as.numeric(rt_ms)),
+    correct = suppressWarnings(as.numeric(correct))
+  ) %>%
+  filter(nchar(char) == 1L)
+
+# --- Load CLD (support 'full' and 'sample') ---
+ext <- tolower(tools::file_ext(cld_path))
+if (ext %in% c("tsv", "txt")) {
+  first_line <- readr::read_lines(cld_path, n_max = 1)
+  use_tab <- length(first_line) && grepl("\t", first_line)
+  cld_raw <- if (use_tab) {
+    readr::read_delim(cld_path, delim = "\t", show_col_types = FALSE)
+  } else {
+    readr::read_csv(cld_path, show_col_types = FALSE)
+  }
+} else {
+  cld_raw <- readr::read_csv(cld_path, show_col_types = FALSE)
+}
+
+if (identical(cfg$cld_type, "full")) {
+  needed <- c("Word", "Length", "Strokes", "Frequency")
+  if (!all(needed %in% names(cld_raw))) {
+    stop("CLD full file missing columns: ", paste(setdiff(needed, names(cld_raw)), collapse = ", "))
+  }
+  cld <- cld_raw %>%
+    filter(Length == 1) %>%
+    transmute(
+      char = as.character(Word),
+      strokes = as.numeric(Strokes),
+      log_freq = log10(pmax(as.numeric(Frequency), 0) + 1)
+    )
+} else if (identical(cfg$cld_type, "sample")) {
+  if (!all(c("char", "log_freq", "strokes") %in% names(cld_raw))) {
+    stop("Sample CLD must have columns: char, log_freq, strokes")
+  }
+  cld <- cld_raw %>%
+    transmute(
+      char = as.character(char),
+      log_freq = as.numeric(log_freq),
+      strokes  = as.numeric(strokes)
+    )
+} else {
+  stop("Unknown cld_type in configs/cleaning.yml: ", cfg$cld_type)
+}
+
+# --- Trim and aggregate ---
+filtered_trials <- sclp %>%
+  filter(!is.na(rt_ms)) %>%
+  filter(rt_ms >= rt_min, rt_ms <= rt_max) %>%
+  { if (keep_correct) filter(., !is.na(correct) & correct == 1) else . }
+
+# Atomic write helper
+write_csv_atomic <- function(df, path) {
+  tmp <- paste0(path, ".tmp")
+  readr::write_csv(df, tmp)
+  fs::file_move(tmp, path)
+}
+
+# Persist filtered trials
+filtered_path <- here("outputs", "data", "trials_filtered.csv")
+write_csv_atomic(filtered_trials, filtered_path)
+
+# mean(log RT) per character
+agg_rt <- filtered_trials %>%
+  group_by(char) %>%
+  summarise(mean_log_rt = mean(log(rt_ms)), .groups = "drop")
+
+# accuracy per character from character trials (pre-trim RT)
+agg_acc <- sclp %>%
+  group_by(char) %>%
+  summarise(acc_rate = mean(correct, na.rm = TRUE), .groups = "drop")
+
+# join, requiring predictors
+dat <- agg_rt %>%
+  left_join(agg_acc, by = "char") %>%
+  inner_join(cld, by = "char") %>%
+  drop_na(log_freq, strokes)
+
+processed_path <- here("outputs", "data", "processed.csv")
+write_csv_atomic(dat, processed_path)
+
+# Cleaning summary YAML (atomic)
+summary_yaml <- here("outputs", "results", "cleaning.yml")
+summary_info <- list(
+  timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
+  trimming = list(
+    correct_only = keep_correct,
+    rt_min_ms = rt_min,
+    rt_max_ms = rt_max
+  ),
+  counts = list(
+    total_trials = nrow(sclp),
+    kept_trials = nrow(filtered_trials),
+    dropped_trials = nrow(sclp) - nrow(filtered_trials)
+  )
+)
+tmp_yaml <- paste0(summary_yaml, ".tmp")
+yaml::write_yaml(summary_info, tmp_yaml)
+fs::file_move(tmp_yaml, summary_yaml)
+
+# RT histogram (kept trials)
+hist_plot <- filtered_trials %>%
+  ggplot(aes(x = rt_ms)) +
+  geom_histogram(bins = 40, fill = "#4477AA") +
+  labs(
+    title = glue("RT histogram (kept {nrow(filtered_trials)}/{nrow(sclp)} trials)"),
+    x = "RT (ms)",
+    y = "Count"
+  ) +
+  theme_minimal(base_size = 14)
+fig_path <- here("outputs", "figures", "rt_hist.png")
+ggsave(fig_path, plot = hist_plot, width = 8, height = 5, dpi = 150)
+
+cat(glue(
+  "Wrote {nrow(dat)} rows to processed data; outputs saved to:\n",
+  "  - {processed_path}\n",
+  "  - {summary_yaml}\n",
+  "  - {fig_path}\n"
+))
+</file>
+
+<file path="scripts/02_model.R">
+## scripts/02_model.R
+## Fit a small model and write a diffable YAML with key metrics.
+## Input:  outputs/data/processed.csv
+## Output: outputs/results/metrics.yml
+
+suppressPackageStartupMessages({
+  library(readr)
+  library(here)
+})
+
+dir.create(here::here("outputs","results"), showWarnings = FALSE, recursive = TRUE)
+d <- readr::read_csv(here::here("outputs","data","processed.csv"), show_col_types = FALSE)
+
+needed <- c("mean_log_rt","log_freq","strokes")
+if (!all(needed %in% names(d))) {
+  stop("Processed data missing required columns: ", paste(setdiff(needed, names(d)), collapse = ", "))
+}
+
+mod <- lm(mean_log_rt ~ log_freq + strokes, data = d)
+s   <- summary(mod)
+
+co    <- coef(mod)
+r2    <- unname(s$r.squared)
+adjr2 <- unname(s$adj.r.squared)
+sigma <- unname(s$sigma)
+aic   <- AIC(mod)
+bic   <- BIC(mod)
+n     <- nrow(d)
+
+out <- here::here("outputs","results","metrics.yml")
+lines <- c(
+  sprintf('timestamp: "%s"', format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
+  'model: lm(mean_log_rt ~ log_freq + strokes)',
+  sprintf('n_obs: %d', n),
+  'coefficients:',
+  sprintf('  intercept: %.6f', unname(co[1])),
+  sprintf('  log_freq: %.6f', unname(co["log_freq"])),
+  sprintf('  strokes: %.6f',  unname(co["strokes"])),
+  sprintf('r2: %.6f', r2),
+  sprintf('adj_r2: %.6f', adjr2),
+  sprintf('sigma: %.6f', sigma),
+  sprintf('aic: %.6f', aic),
+  sprintf('bic: %.6f', bic)
+)
+tmp <- paste0(out, ".tmp")
+cat(paste0(lines, collapse = "\n"), "\n", file = tmp)
+if (!file.rename(tmp, out)) {
+  stop("Failed to move temporary metrics YAML into place.")
+}
+cat(sprintf("Wrote %s\n", out))
+</file>
+
+<file path="slides/agentic-ai.qmd">
+---
+title: "Agentic AI for reproducible language science: from prompt to pipeline"
+format:
+  pptx:
+    reference-doc: ../talk/nord-theme.potx
+execute:
+  eval: false
+toc: false
+---
+
+# Section Header: Why agents now
+::: {.notes}
+Timing: 0:00-1:30. Set the capability frame and the "Ask -> Plan -> Do -> Record" loop.
+:::
+
+---
+
+# From chat to agents
+::: {.notes}
+Timing: 1:30-3:00. Define agents as planner, tool-caller, executor, reporter.
+:::
+- Agents plan multi-step work.
+- They call external tools.
+- They run code and scripts.
+- They record actions and results.
+- Capability expands; speed increases.
+![Simple agent loop schematic (non-generative)](placeholder.png)
+
+---
+
+# What you will learn today
+::: {.notes}
+Timing: 3:00-4:00. Emphasise that it is R-focused but portable.
+:::
+- Where agents add capability.
+- Pragmatic pitfalls and mitigations.
+- Run a containerised R workflow.
+- Use GitHub for visible review.
+
+---
+
+# Section Header: Landscape and access
+::: {.notes}
+Timing: 4:00-4:20. Name systems briefly; no deep dive.
+:::
+
+---
+
+# Systems you may encounter
+::: {.notes}
+Timing: 4:20-5:30. Keep brand-agnostic; students use what is available.
+:::
+- Claude Code (web/IDE).
+- Cursor (IDE agent mode).
+- Coding agents in editors.
+- Choose what your lab supports.
+![Claude Code, Cursor, editor logos (insert non-generative logos)](placeholder.png)
+
+---
+
+# China-aware options (one slide)
+::: {.notes}
+Timing: 5:30-6:30. Mention without prices; institutions vary.
+:::
+- Qwen models (AliCloud).
+- Kimi (Moonshot AI).
+- GLM (Zhipu AI).
+- ERNIE, Hunyuan, Doubao.
+![Provider logos grid (non-generative)](placeholder.png)
+
+---
+
+# Thinking about costs
+::: {.notes}
+Timing: 6:30-8:00. Teach patterns, not price lists.
+:::
+- Three patterns: subscription, tokens, editor.
+- Iterations drive spend.
+- Keep prompts short.
+- Prefer small models for drafts.
+![Token cost formula schematic (non-generative)](placeholder.png)
+
+---
+
+# Section Header: Promise and pitfalls
+::: {.notes}
+Timing: 8:00-8:15. Shift from tools to practice.
+:::
+
+---
+
+# What gets better now
+::: {.notes}
+Timing: 8:15-9:30. Capability and provenance, not hype.
+:::
+- Attempt larger tasks.
+- Explore alternatives quickly.
+- Faster first drafts.
+- Traceable, recorded changes.
+
+---
+
+# Pitfalls you will meet
+::: {.notes}
+Timing: 9:30-11:00. Keep pragmatic and actionable.
+:::
+- Overreach beyond expertise.
+- Skill drift if you stop reading.
+- Cost creep from many runs.
+- Mitigate: small tasks, tests, review.
+
+---
+
+# Section Header: Methods tutorial (R-focused)
+::: {.notes}
+Timing: 11:00-11:15. From ideas to one runnable pipeline.
+:::
+
+---
+
+# Why containers help agents
+::: {.notes}
+Timing: 11:15-12:30. Agents arrive "cold"; containers standardise starts.
+:::
+- Predictable start each run.
+- Self-documenting projects win.
+- If a stranger can run it...
+- ...an agent can run it.
+![Container concept icon (non-generative)](placeholder.png)
+
+---
+
+# Repo skeleton (demo)
+::: {.notes}
+Timing: 12:30-13:30. Show structure you will actually run.
+:::
+- README with quickstart.
+- Makefile orchestration.
+- R scripts for steps.
+- Raw, processed, results folders.
+- Wrapper script to run R.
+![Repository tree schematic (non-generative)](placeholder.png)
+
+---
+
+# One pipeline, end-to-end
+::: {.notes}
+Timing: 13:30-14:45. Makefile first; upgrade later if needed.
+:::
+- Simple Makefile rules.
+- Deterministic script runs.
+- Diffable result files.
+- Upgrade path exists later.
+
+---
+
+# Section Header: Example - lexical decision (Option A)
+::: {.notes}
+Timing: 14:45-15:00. Language-science example; tiny lawful slices.
+:::
+
+---
+
+# Task and data (tiny slices)
+::: {.notes}
+Timing: 15:00-16:00. Keep datasets small; ship locally.
+:::
+- Behaviour: lexical decision RTs.
+- Predictors: frequency, strokes.
+- Join SCLP with CLD rows.
+- Aim: small, fast, illustrative.
+![Lexical decision schematic (non-generative)](placeholder.png)
+
+---
+
+# Demo: what you will run
+::: {.notes}
+Timing: 16:00-17:00. Prepare a fallback recording.
+:::
+- Clone the repo.
+- Run `make` once.
+- View `metrics.yml`.
+- Keep a short screencast.
+
+---
+
+# Live steps (5-6 minutes)
+::: {.notes}
+Timing: 17:00-23:00. Small change + re-run + visible diff.
+:::
+- Run `make` to baseline.
+- Agent adds one predictor.
+- Re-run `make` deterministically.
+- Show diff in `metrics.yml`.
+- Commit and open a PR.
+
+---
+
+# Interactive vs script-based
+::: {.notes}
+Timing: 23:00-24:30. Draft interactively, execute by script.
+:::
+- Draft with an agent.
+- Execute via scripts.
+- Scripts beat ad-hoc REPL.
+- Reproducibility first.
+
+---
+
+# Section Header: GitHub basics
+::: {.notes}
+Timing: 24:30-24:45. Light-touch process; keep humans engaged.
+:::
+
+---
+
+# Keep the human in the loop
+::: {.notes}
+Timing: 24:45-26:15. One screenshot of a PR with a small diff.
+:::
+- Branch -> PR -> review.
+- Scoped commits with notes.
+- Small, reviewable changes.
+- Merge with confidence.
+![PR with small YAML diff (non-generative)](placeholder.png)
+
+---
+
+# End-to-end reporting
+::: {.notes}
+Timing: 26:15-27:45. Manuscript pulls numbers from results tables.
+:::
+- Results as CSV/YAML.
+- Manuscript reads tables.
+- Changes stay transparent.
+![Manuscript numbers from tables schematic (non-generative)](placeholder.png)
+
+---
+
+# Section Header: Wrap-up and questions
+::: {.notes}
+Timing: 27:45-28:00. Leave time buffer for Q&A up to 40:00.
+:::
+
+---
+
+# Take-home
+::: {.notes}
+Timing: 28:00-29:00. Close with four rules of thumb.
+:::
+- Agents expand capability.
+- Structure keeps them honest.
+- Container + Makefile + scripts.
+- GitHub review for trust.
+
+---
+
+# Q&A
+::: {.notes}
+Timing: 29:00-40:00. Keep a slide visible with repo URL and a QR code placeholder.
+:::
+![Repo URL / QR code placeholder (non-generative)](placeholder.png)
+</file>
+
+<file path="configs/cleaning.yml">
+correct_only: true
+rt_min_ms: 200
+rt_max_ms: 2000
+
+# Data sources 
+raw_trials: data/raw/SCLP_full_TrialsSCLP.csv
+raw_type: sclp_full   # one of: sclp_full, sample
+cld_file: data/raw/chineselexicaldatabase2.1.txt
+cld_type: full        # one of: full, sample
+</file>
+
+<file path="reports/analysis.qmd">
+---
+title: "Agentic AI Demo Report"
+format:
+  html:
+    toc: true
+  pdf:
+    toc: true
+    pdf-engine: tectonic
+  docx: default
+  gfm: default
+freeze: true
+execute:
+  echo: true
+---
+
+```{r}
+#| label: setup
+#| message: false
+library(yaml)
+
+metrics_path <- here::here("outputs","results","metrics.yml")
+cleaning_path <- here::here("outputs","results","cleaning.yml")
+fig_path <- here::here("outputs","figures","rt_hist.png")
+
+stopifnot(file.exists(metrics_path))
+stopifnot(file.exists(cleaning_path))
+stopifnot(file.exists(fig_path))
+
+metrics <- yaml::read_yaml(metrics_path)
+cleaning <- yaml::read_yaml(cleaning_path)
+
+stopifnot(!is.null(metrics$n_obs))
+N <- as.integer(metrics$n_obs)
+stopifnot(!is.na(N))
+
+# helpers for formatting
+fmt3 <- function(x) sprintf("%.3f", x)
+fmt6 <- function(x) sprintf("%.6f", x)
+```
+
+## Overview
+
+This report reads pre-computed outputs from the simple demo pipeline.
+
+- Processed data: `outputs/data/processed.csv`
+- Cleaning summary: `outputs/results/cleaning.yml`
+- Model metrics: `outputs/results/metrics.yml`
+
+## Cleaning Summary
+
+The pipeline kept `r cleaning$counts$kept_trials` of `r cleaning$counts$total_trials` trials (dropped `r cleaning$counts$dropped_trials`).
+Settings: correct-only = `r cleaning$trimming$correct_only`, RT range = `r cleaning$trimming$rt_min_ms`–`r cleaning$trimming$rt_max_ms` ms.
+
+```{r}
+data.frame(
+  setting = c("correct_only","rt_min_ms","rt_max_ms","total_trials","kept_trials","dropped_trials"),
+  value = c(
+    as.character(cleaning$trimming$correct_only),
+    cleaning$trimming$rt_min_ms,
+    cleaning$trimming$rt_max_ms,
+    cleaning$counts$total_trials,
+    cleaning$counts$kept_trials,
+    cleaning$counts$dropped_trials
+  )
+)
+
+```
+## RT Histogram (kept trials)
+
+```{r}
+knitr::include_graphics(fig_path)
+```
+
+## Model Metrics
+
+Model: `r metrics$model`  (N = `r N`)
+
+R² = `r fmt3(as.numeric(metrics$r2))`.
+
+```{r}
+#| label: optional-metrics
+if (!is.null(metrics$adj_r2)) {
+  cat(paste0("Adjusted R² = ", fmt3(as.numeric(metrics$adj_r2)), ".\n\n"))
+}
+if (!is.null(metrics$sigma)) {
+  cat(paste0("Residual sigma = ", fmt3(as.numeric(metrics$sigma)), ".\n\n"))
+}
+if (!is.null(metrics$aic) || !is.null(metrics$bic)) {
+  cat("Information criteria:\n\n")
+  aic_val <- if (!is.null(metrics$aic)) fmt3(as.numeric(metrics$aic)) else "NA"
+  bic_val <- if (!is.null(metrics$bic)) fmt3(as.numeric(metrics$bic)) else "NA"
+  print(data.frame(metric = c("AIC", "BIC"), value = c(aic_val, bic_val)))
+}
+```
+
+Coefficients:
+
+```{r}
+data.frame(
+  term = c("intercept","log_freq","strokes"),
+  estimate = c(
+    fmt6(as.numeric(metrics$coefficients$intercept)),
+    fmt6(as.numeric(metrics$coefficients$log_freq)),
+    fmt6(as.numeric(metrics$coefficients$strokes))
+  )
+)
+```
+</file>
+
+<file path="AGENTS.md">
+```md
+# Agents Guide
+
+This document defines how agents work in this repo. It is **policy**: follow it unless a task explicitly says otherwise. Goals: clarity, reproducibility, auditable steps.
+
+---
+
+## 1. Context
+
+- User:
+- Work:
+- Priorities: reproducibility, clarity, well-documented workflows.
+- Default approach: prefer simple, auditable steps over clever automation.
+
+### 1.1 Directory contract
+
+- `R/` → reusable functions only; no side effects on import; no top-level I/O.
+- `scripts/` → orchestration, CLI entry points, diagnostics helpers (small, no heavy compute).
+- `reports/` → Quarto views that **read** pipeline outputs (QC, diagnostics, inference stubs).
+- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports).
+
+### 1.2 Non-negotiables
+
+1. Do not add new compute into QMDs. If a report needs data that does not exist, add a target and a function.
+2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
+3. Prefer plain-text, diffable artefacts (CSV, MD, YAML) in `outputs/`.
+4. Use `here::here()` for all paths. No relative `../` or `getwd()` assumptions.
+
+---
+
+## 2. Platforms and general rules
+
+- Cloud: expect containerised tools and fixed resources. Long jobs may time out.
+- Laptop: respect limited resources and mixed OS quirks (Windows or Linux).
+- Parallel agents may run locally and in the cloud. Sync often and separate concerns.
+- Prefer tidyverse coding in general.
+
+---
+
+## 3. Environment wrapper (mandatory)
+
+- Always execute R and Quarto via `./dev/run-in-env.sh`.
+- Shared environment families: `r-core` (analysis, targets, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
+- Use per-project R packages via `R_LIBS_USER=$PWD/.rlib`.
+
+### 3.1 Quick start
+
+```bash
+# Run R scripts deterministically
+./dev/run-in-env.sh Rscript scripts/01_prepare.R
+./dev/run-in-env.sh Rscript scripts/02_model.R
+
+# Render a Quarto document
+./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
+
+# Start an interactive R session
+./dev/run-in-env.sh R
+```
+
+---
+
+## 4. Git and PR workflow
+
+We use GitHub for code, manuscript preparation, and project management. When you see “issue”, assume a GitHub Issue. Use `gh` CLI where convenient.
+
+### 4.1 Branching and commits
+
+- Work on `main`. Do not create long-lived feature branches unless agreed. If you suggest a branch, get approval.
+- Be clear which branch you are on. Pull regularly so `main` stays in sync.
+- Commit small, logical changes frequently. Push or pull often.
+- Keep the working tree tidy. Avoid untracked files. Default to tracking files; if unsure, ask.
+- Track **generated outputs under `outputs/`** (CSV, MD, HTML, PNG, and similar) so reviewers see what changed.
+- Do not delete generated files in `outputs/` unless explicitly requested or they are superseded by a rename in the same PR. Call this out in the PR body.
+
+### 4.2 Commit rules
+
+- Keep commits frequent to keep the remote current.
+- Reference Issues in commit titles when relevant, for example `fix: handle null IDs #123`.
+- Keep commits atomic. Commit only the files you changed and list each path explicitly.  
+  `git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
+- For brand-new files:  
+  `git restore --staged :/ && git add "path/to/file1" "path/to/file2" && git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
+- Always double-check `git status` before committing.
+- Delete unused or obsolete files when your changes make them irrelevant. Revert files only when the change is yours or explicitly requested.
+- Coordinate with other agents before removing their in-progress edits. Do not revert or delete work you did not author without agreement.
+- Never run destructive Git operations such as `git reset --hard`, `rm` of tracked files, or checking out older commits to overwrite the working tree unless the user gives explicit written instruction here.
+- Before deleting a file to resolve a local failure, stop and ask.
+- Do not amend commits unless you have explicit written approval in the task thread.
+- Moving, renaming, and restoring files is allowed.
+- Quote paths containing brackets or parentheses when staging or committing.
+- When running `git rebase`, avoid opening editors. Use `GIT_EDITOR=:` and `GIT_SEQUENCE_EDITOR=:` or pass `--no-edit`.
+
+### 4.3 Code review and approval
+
+- CI is not assumed.
+- Use Pull Requests for review. You can ask for reviews on commits.
+- Reference the driving Issue in the PR description. Include a closing keyword, for example `Closes #123`.
+
+---
+
+## 5. Development workflow
+
+Prefer text-based, diffable artefacts and keep compute in the pipeline.
+
+### 5.1 WRI cycle
+
+1. **Write**: Report code in `reports/*.qmd`.
+2. **Run**: build with `{targets}` and render QMD to `outputs/reports/...`.
+3. **Inspect**: review rendered MD or HTML in `outputs/...`.
+4. **Iterate**: refine; commit both code and updated `outputs/`.
+
+### 5.2 Principles for documents and code
+
+- Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in publication-ready format via apaquarto and consumes figures and tables generated earlier.
+- The data processing and analysis pipeline should be simple, reproducible, and shareable on OSF.
+- Readers care about the finished result. Avoid historical comments unless they aid understanding.
+- Do not create ad hoc `v2` files. Use Git for versioning.
+- Use Makefiles where helpful to automate the pipeline.
+- QMDs are views and logs. Heavy compute belongs in targets and `R/`.
+- Do not mix computation and interpretation. Interpretive prose is based on QMD outputs. Inline numbers when helpful.
+- YAML side outputs generated mid-pipeline may be read by `manuscript.qmd`. Prefer YAML over `.rds` for diffability.
+- Heavy R objects, for example Bayesian mixed models, can be saved as `.rds`.
+- Exploratory reports sit outside the core reproducible pipeline.
+- Quarto defaults: `freeze: true`, `echo: true`. See the freeze policy.
+
+### 5.3 Path management
+
+- Use `here()` for all file paths. Include a `.here` file if needed.
+
+### 5.4 Tests
+
+- QMDs must render.
+- Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown.
+- Add other tests as necessary.
+
+### 5.5 Quarto freeze policy
+
+Quarto writes cached renders into `_freeze/` directories adjacent to each QMD, for example `outputs/reports/exp1/_freeze/06_exp1_report/`. These directories are ignored by Git but must remain in place for deterministic rebuilds.
+
+- Production or stable runs: prefer `freeze: true` for exact outputs and deterministic rebuilds.
+- Local development: use the `local` profile (`configs/profiles/local.yaml`) with `reports: { freeze: auto }` to re-render only changed chunks.
+- Before tagging outputs, restore `freeze: true` or remove the local profile and confirm the corresponding `_freeze/` directories are populated.
+
+### 5.6 Core implementation principles
+
+- Fail fast and surface errors early.
+- Do not use defensive programming that hides missing data. Fix root causes.
+- Assume a deterministic pipeline. If data is missing, fix upstream.
+- Keep the file system organised. Use `scratch/` or `tmp/` for temporary work.
+- Keep debugging work separate or avoid committing it once fixed.
+- Implement the simplest solution that works. Avoid over-engineering.
+- Favour clarity and explainability over performance or terseness. Assume the code will be shared. Avoid obvious comments.
+- Avoid unnecessary intermediate data structures.
+
+### 5.7 Long-running tooling and stuck runs
+
+- Long-running tooling such as tests, Docker Compose, or migrations must use sensible timeouts or run in non-interactive batch mode. Never leave a shell command waiting indefinitely.
+- If a Codex run is too long or stuck on tool calling, apply the same rule. Use non-interactive batch, explicit timeouts, or exit and resume with log inspection.
+
+---
+</file>
+
+<file path="talk/talk-outline-only.md">
+AGENT TALK
+
+# Agentic AI for Reproducible Language Science: From Prompt to Pipeline
+
+Shane Lindsay  
+s.lindsay@hull.ac.uk
+University of Hull  
+https://github.com/shanelindsay/agentic-r/
+
+# Agenda
+
+- Why now (spoiler: they finally work)
+- What is an agent
+- Demo: agents and reproducible research patterns
+- Practical patterns you can steal
+
+# Pre-requisites
+
+Assume you have used LLM chatbots, for example ChatGPT, ==探索未至之境==  
+Assume knowledge of R (applies to Python and other tools too)
+
+# Why agents now
+
+- LLM models are now smart enough for multi-step, tool-using tasks
+- They are cheap enough to be practical for students and labs
+- Agents are accessible
+- The technology is useful for everyday research work
+
+**Provocation**: By the end of 2025, no one will ever need to code or use a GUI (like SPSS) again
+
+# What is an agent
+
+- General purpose LLM that lives inside a computer
+- Read and write access to the file system, with access to bash or PowerShell
+- Whatever you can do, it can do, with guardrails and approvals
+- Can work autonomously for typically less than 20 minutes
+- Search the web, write code, execute it, write it up
+- Full end to end scientific process  
+  - Today focused on analyses
+
+# Costs
+
+- One knob: fast and rough versus slow and smart
+- Daily heavy use: $200 per month
+- Moderate use: $100 per month
+- Light use: $20 per month
+- Free tiers exist
+
+# Examples
+
+- US: Codex (OpenAI), Claude Code (Anthropic), Gemini (Google), Cursor, Copilot (Microsoft)
+- China: Kimi K2, Qwen 3, GLM 4.5
+- Currently: OpenAI Codex is smartest, Claude Code 4.5 second, GLM or K2 best for cost
+
+# Promise of agents
+
+- Increase speed
+- Increase capability
+
+# Perils of agents
+
+- Errors
+- Loss of control and responsibility
+- Atrophy of skills
+- Technical demands and complexity (tech debt)
+
+# Using agents
+
+- Think of an agent as a new lab member arriving cold to your research project
+- Very keen, very fast, very smart, sometimes wise, sometimes also wrong
+- Agents work best when projects are structured, documented and runnable
+- Structure encourages consistent patterns in your workflows
+
+# Why reproducible research
+
+- Verify findings, others can validate your results
+- Reduce bias through transparency in methods
+- Catch errors, community review improves quality
+- Preserve knowledge beyond individual researchers
+- Increasingly required by funding agencies and journals
+
+# Reproducible research and agentic AI are best friends
+
+- Research codebase lifecycle: plan → execute → review → share → re-run
+- Reproducibility means others, including agents, can repeat the same steps and get the same artefacts
+- Agents support reproducibility when outputs are scripted, logged and text based
+
+# Coding patterns and how agents interact
+
+- beginner: Monolithic 1000 line script: quick start, fragile for change, sprawl, hard to understand and debug
+- intermediate: Numbered scripts: clearer workflow, smaller functional units
+- pro: Makefile orchestrated scripts: targets, explicit dependencies, deterministic runs
+
+**Goal**: press a button, raw data transformed directly to numbers in a manuscript
+
+# Containers and predictability
+
+- Containers are cloud based Unix environments that can be spun up and thrown away
+- Agents are stateless across sessions, containers provide a predictable starting point
+- Running agents in container makes it safer
+- If a stranger can run the repo from the documentation, an agent can too
+
+# GitHub
+
+- GitHub provides version tracking
+- Protect work from being overwritten, history is always saved
+- Agents can use it via bash, you can interact in an IDE or on web
+- You can monitor and approve any changes with pull requests
+
+# shanelindsay/agentic-r GitHub repo
+
+- `AGENTS.md`: how the agent should work in this repo - the "handbook"
+- `dev/run-in-env.sh`: get R working using micromamba
+- `environment.yml`: R version and packages to use (numbered, reproducible)
+- `makefile` - recipe of what scripts to run in which order
+- Agents are told to use the wrapper to run scripts
+
+# Workflow
+
+- Makefile and two small R scripts (`01_prepare.R`, `02_model.R`)
+- `data/raw`, `data/processed`, `results/metrics.yml`
+- Results feed into quarto report
+
+# Example: Lexical Decision in Chinese
+- Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods, 57, 206. https://doi.org/10.3758/s13428-025-02701-7  
+
+- Sun, C. C., Hendrix, P., Ma, J. Q., & Baayen, R. H. (2018). Chinese Lexical Database (CLD): A large‑scale lexical database for simplified Chinese. Behavior Research Methods, 50(5), 2606–2629. https://doi.org/10.3758/s13428-018-1038-3  
+
+# Example: Lexical Decision in Chinese
+
+- Baseline: run the pipeline once to produce `metrics.yml`
+- lexical decision RT with lexical predictors
+
+# Agent demo: Builder
+
+- Agent prompt: add one predictor and rerun report 
+- Agent runs pipeline with wrapper and Makefile
+
+# End to end reporting
+
+- Manuscript or Quarto report reads values from `results/*`
+- This keeps numbers traceable and updates transparent
+
+# Agent demo: Github Pull Request Review
+
+- Second agent reads the PR diff and writes a review
+- Human reviews the agent review and approves or requests changes
+- Loop...
+
+# Agent patterns to copy
+
+- Builder: proposes and edits code
+- Checker: audits diffs and outputs
+- Critic (optional): proposes tests or diagnostics
+- Humans remain the final approvers
+
+# Where to start
+
+- Pick one stage, cleaning or modelling or reporting, and start small
+- Keep tasks atomic
+- Measure time saved against review effort
+
+# Practical tips
+
+- Short, explicit prompts, give file paths and desired outputs
+- Make outputs diffable (CSV or YAML), keep raw data read only
+
+# Take-home
+
+- Agents expand what you can do
+- You become a project manager rather than coder - different skill set, but still techical skills needed
+- Structure, container plus Makefile plus scripts plus PRs
+- Start small, review everything, iterate responsibly
+
+
+# Q and A
+
+s.lindsay@hull.ac.uk
+https://github.com/shanelindsay/agentic-r/
+</file>
+
+<file path="Makefile">
+.PHONY: all data analyse report clean slides talk
+
+# Prefer the env wrapper, fall back gracefully if it is not available
+RUNNER  ?= ./dev/run-in-env.sh
+RSCRIPT ?= Rscript
+QUARTO  ?= quarto
+
+ifeq (,$(wildcard $(RUNNER)))
+R_CMD := $(RSCRIPT)
+Q_CMD := $(QUARTO)
+else
+R_CMD := $(RUNNER) Rscript
+Q_CMD := $(RUNNER) $(QUARTO)
+endif
+
+all: analyse report
+
+outputs/data/processed.csv outputs/data/trials_filtered.csv outputs/results/cleaning.yml outputs/figures/rt_hist.png: scripts/01_prepare.R configs/cleaning.yml
+	$(R_CMD) scripts/01_prepare.R
+
+outputs/results/metrics.yml: outputs/data/processed.csv scripts/02_model.R
+	$(R_CMD) scripts/02_model.R
+
+report: outputs/results/metrics.yml outputs/results/cleaning.yml outputs/figures/rt_hist.png reports/analysis.qmd
+	$(Q_CMD) render reports/analysis.qmd --output-dir $(CURDIR)/outputs/reports
+
+data: outputs/data/processed.csv
+
+analyse: outputs/results/metrics.yml
+
+clean:
+	rm -rf outputs/data outputs/results outputs/figures outputs/reports
+
+# ---- Slides (Quarto) ----
+slides: outputs/deliverables/agentic-ai-concrete/agentic-ai-concrete.pptx
+talk: slides
+
+outputs/deliverables/agentic-ai-concrete/agentic-ai-concrete.pptx: slides/agentic-ai-concrete.qmd talk/nord-theme.potx dev/run-in-env.sh
+	$(Q_CMD) render slides/agentic-ai-concrete.qmd
+	mkdir -p outputs/deliverables/agentic-ai-concrete
+	mv -f slides/agentic-ai-concrete.pptx outputs/deliverables/agentic-ai-concrete/
+</file>
+
+<file path="README.md">
+# Agentic R Lexical-Decision Demo (scripts + Quarto)
+
+A minimal, R-focused, agent-friendly pipeline for a **lexical decision** demo:
+- **Task:** character-level lexical decision (RT/accuracy).
+- **Data:** tiny slices from the Simplified Chinese Lexicon Project (SCLP; trial-level) and the Chinese Lexical Database (CLD; predictors).
+- **Pipeline:** `make` orchestrates three tiny steps plus a report → writes **diffable** outputs under `outputs/` (for example `outputs/results/metrics.yml`).
+
+## Why this repo?
+Agents (e.g., Codex/Claude Code/Cursor) behave like new lab members arriving cold. A tidy repo + Makefile + small scripts gives them structure; you stay in control by running scripts deterministically and reviewing diffs.
+
+## Quick start (local)
+1. Install R (≥ 4.2) and `make`.
+2. Clone:
+   ```bash
+   git clone <your-repo-url> agentic-r-lexdec-demo
+   cd agentic-r-lexdec-demo
+   ```
+3. Run the pipeline:
+   ```bash
+   make          # or: make data && make analyse && make report
+   ```
+4. Inspect the outputs:
+   - `outputs/data/processed.csv`
+   - `outputs/results/cleaning.yml`
+   - `outputs/results/metrics.yml` (intercept/slope(s)/R², plus `n_obs` and timestamp)
+   - `outputs/reports/analysis.{html,pdf,docx,md}`
+
+### Optional: run scripts manually (inside project env)
+The Makefile calls `./dev/run-in-env.sh` automatically when available. You can also invoke steps yourself:
+```bash
+./dev/run-in-env.sh Rscript scripts/01_prepare.R
+./dev/run-in-env.sh Rscript scripts/02_model.R
+./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
+```
+
+## Data
+
+See licences and fetch locations in `docs/data-sources.md`.
+
+* **SCLP trial-level data**: trial-level lexical decision for 8,105 characters + 4,864 pseudocharacters. Download the full data from OSF (see paper) and create a tiny lawful slice (for example, select a handful of rows in R) before committing it as `data/raw/sclp_sample.csv`. (See [sclp-doi])
+
+* **CLD predictors**: lexical variables for simplified Mandarin words. Download from the CLD website and create a small slice `data/raw/cld_sample.csv` with at least `char`, `log_freq`, `strokes`. (See [cld-paper])
+
+## How it works
+
+* `configs/cleaning.yml`: shared parameters for trimming + file sources (full SCLP + CLD).
+* `scripts/01_prepare.R`: applies trimming once, writes `outputs/data/trials_filtered.csv`, aggregates to per-character `outputs/data/processed.csv`, and emits cleaning summary + histogram.
+* `scripts/02_model.R`: fits `lm(mean_log_rt ~ log_freq + strokes)`, then writes a small, **diffable** `outputs/results/metrics.yml`.
+* `reports/analysis.qmd`: reads YAML and figure, renders to `outputs/reports/`.
+
+## Scientific thinking skills library
+
+This repo bundles the **scientific-thinking** skill cards from K-Dense AI’s [Claude Scientific Skills](https://github.com/K-Dense-AI/claude-scientific-skills) collection. The content lives in `skills/scientific-thinking/` and includes detailed guidance for:
+
+- literature reviews, hypothesis generation, exploratory data analysis
+- critical review, peer review, scholar evaluation, and scientific brainstorming
+- statistical analysis, visualization, writing, and document-format skills (PDF, DOCX, PPTX, XLSX)
+
+The skill content is licensed under MIT per `skills/scientific-thinking/LICENSE.md`, and each document skill subfolder carries additional notices where provided by the source project.
+
+## Talk slides
+
+Render the concrete deck (PPTX) to `outputs/`:
+
+```bash
+make slides
+```
+
+The rule uses `quarto render` via the same environment wrapper and moves the generated file into `outputs/deliverables/agentic-ai-concrete/` for review.
+
+## Attribution
+
+* SCLP: Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods. [DOI][sclp-doi]
+* CLD: Sun, C. C., Hendrix, P., Ma, J. Q., & Baayen, R. H. (2018). Chinese Lexical Database (CLD): A large-scale lexical database for simplified Chinese. Behavior Research Methods. [DOI][cld-paper]
+
+[sclp-doi]: https://doi.org/10.3758/s13428-025-02701-7
+[cld-paper]: https://doi.org/10.3758/s13428-018-1038-3
+</file>
+
+</files>
