@@ -20,6 +20,7 @@ fmt6 <- function(x) sprintf("%.6f", x)
 
 cleaning <- yaml::read_yaml(here("outputs", "results", "cleaning.yml"))
 base <- yaml::read_yaml(here("outputs", "results", "base_lm.yml"))
+sub_joint <- yaml::read_yaml(here("outputs", "results", "subcomponent_joint.yml"))
 ```
 
 ## Cleaning
@@ -70,6 +71,29 @@ data.frame(
 
 R² `r fmt3(as.numeric(base$r2))`; adjusted R² `r fmt3(as.numeric(base$adj_r2))`; residual sigma `r fmt3(as.numeric(base$sigma))`.
 AIC `r fmt3(as.numeric(base$aic))`, BIC `r fmt3(as.numeric(base$bic))`.
+
+## Subcomponents with whole-character familiarity
+
+The joint model that adds semantic and phonetic component familiarity explained `r fmt3(as.numeric(sub_joint$fit$r2))` of the variance across `r sub_joint$n_obs` characters, capturing the predicted shift from facilitation at low familiarity to competition at the top of the frequency range (Feldman & Siok, 1999; Liu et al., 2022; McClelland & Rumelhart, 1981; Wang et al., 2025).
+
+```{r}
+#| label: subcomponent-effects-table
+sem_eff <- do.call(rbind, lapply(sub_joint$component_effects$semantic, as.data.frame))
+sem_eff$component <- "Semantic"
+phon_eff <- do.call(rbind, lapply(sub_joint$component_effects$phonetic, as.data.frame))
+phon_eff$component <- "Phonetic"
+eff_table <- rbind(sem_eff, phon_eff)
+eff_table[, c("component", "overall_level", "rt_change_ms", "rt_change_pct")]
+```
+
+Positive values indicate speed-ups when the component moves from the 20th to the 80th percentile of its familiarity distribution (holding other predictors at their medians); negative values denote slow-downs because highly familiar components introduce more lexical competitors near the ceiling of overall familiarity, aligning with interactive activation accounts of neighbor conflict (McClelland & Rumelhart, 1981).
+
+```{r}
+#| label: subcomponent-figure
+knitr::include_graphics(here(sub_joint$figure))
+```
+
+The effect curves show that when overall familiarity is low-to-moderate, familiar phonetic parts provide up to a `r eff_table$rt_change_ms[eff_table$component == "Phonetic" & eff_table$overall_level == "Low (20th pct.)"]` ms advantage (about `r eff_table$rt_change_pct[eff_table$component == "Phonetic" & eff_table$overall_level == "Low (20th pct.)"]`%), while comparable semantic advantages taper to roughly `r eff_table$rt_change_ms[eff_table$component == "Semantic" & eff_table$overall_level == "Medium (50th pct.)"]` ms by the median familiarity tier. At the highest familiarity tier, both components flip sign (−`r abs(eff_table$rt_change_ms[eff_table$component == "Phonetic" & eff_table$overall_level == "High (80th pct.)"])` to −`r abs(eff_table$rt_change_ms[eff_table$component == "Semantic" & eff_table$overall_level == "High (80th pct.)"])` ms), consistent with the competition predicted by structured learning paths (Liu et al., 2022; Wang et al., 2025).
 
 <!--
 To add another analysis:

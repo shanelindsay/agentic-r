@@ -40,19 +40,37 @@ sclp <- sclp |>
   mutate(char = as.character(char)) |>
   filter(nchar(char) == 1L)
 
-# CLD: load and keep single-character predictors
+# CLD: load and keep single-character predictors, including component familiarities
 cld_raw <- readr::read_csv(here(cfg$cld_file), show_col_types = FALSE)
+
+log10p1 <- function(x) {
+  vals <- suppressWarnings(as.numeric(x))
+  ifelse(is.na(vals), NA_real_, log10(pmax(vals, 0) + 1))
+}
 
 cld <- if (identical(cfg$cld_type, "full")) {
   cld_raw |>
     filter(Length == 1) |>
     transmute(
-      char     = Word,
-      strokes  = as.numeric(Strokes),
-      log_freq = log10(pmax(as.numeric(Frequency), 0) + 1)
+      char           = Word,
+      strokes        = as.numeric(Strokes),
+      log_freq       = log10p1(Frequency),
+      sem_component  = C1SR,
+      sem_log_freq   = log10p1(C1SRFrequency),
+      phon_component = C1PR,
+      phon_log_freq  = log10p1(C1PRFrequency)
     )
 } else {
-  cld_raw |> select(char, log_freq, strokes)
+  cld_raw |>
+    transmute(
+      char           = char,
+      log_freq       = log_freq,
+      strokes        = strokes,
+      sem_component  = NA_character_,
+      sem_log_freq   = NA_real_,
+      phon_component = NA_character_,
+      phon_log_freq  = NA_real_
+    )
 }
 
 # Trim, aggregate, join
