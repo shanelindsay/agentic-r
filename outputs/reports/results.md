@@ -1,47 +1,12 @@
 # Results
 
 
-``` r
-library(yaml)
-library(here)
-```
-
     here() starts at /root/repo
-
-``` r
-fmt3 <- function(x) sprintf("%.3f", x)
-fmt6 <- function(x) sprintf("%.6f", x)
-
-cleaning <- yaml::read_yaml(here("outputs", "results", "cleaning.yml"))
-base <- yaml::read_yaml(here("outputs", "results", "base_lm.yml"))
-complexity <- yaml::read_yaml(here("outputs", "results", "visual_complexity_penalty.yml"))
-```
 
 ## Cleaning
 
 The pipeline kept 137133 of 235016 trials (dropped 97883). Settings:
 correct-only = TRUE, RT range = 200–2000 ms.
-
-``` r
-data.frame(
-  setting = c(
-    "correct_only",
-    "rt_min_ms",
-    "rt_max_ms",
-    "total_trials",
-    "kept_trials",
-    "dropped_trials"
-  ),
-  value = c(
-    as.character(cleaning$trimming$correct_only),
-    cleaning$trimming$rt_min_ms,
-    cleaning$trimming$rt_max_ms,
-    cleaning$counts$total_trials,
-    cleaning$counts$kept_trials,
-    cleaning$counts$dropped_trials
-  )
-)
-```
 
              setting  value
     1   correct_only   TRUE
@@ -51,24 +16,9 @@ data.frame(
     5    kept_trials 137133
     6 dropped_trials  97883
 
-``` r
-knitr::include_graphics(here("outputs", "figures", "rt_hist.png"))
-```
-
 ![](../outputs/figures/rt_hist.png)
 
 ## Baseline model: frequency and strokes
-
-``` r
-data.frame(
-  term = c("intercept", "log_freq", "strokes"),
-  estimate = c(
-    fmt6(as.numeric(base$coefficients$intercept)),
-    fmt6(as.numeric(base$coefficients$log_freq)),
-    fmt6(as.numeric(base$coefficients$strokes))
-  )
-)
-```
 
            term  estimate
     1 intercept  6.452355
@@ -87,21 +37,6 @@ least to most complex characters implies a 0.340 increase in log RT
 (about 244.060 ms). The strongest penalty lies between 21.5 and 25
 strokes (top 85% of the effect curve).
 
-``` r
-data.frame(
-  metric = c("edf (strokes)", "F statistic", "p-value", "log RT span", "RT span (ms)", "penalty strokes min", "penalty strokes max"),
-  value = c(
-    fmt3(as.numeric(complexity$edf_strokes)),
-    fmt3(as.numeric(complexity$f_strokes)),
-    fmt6(as.numeric(complexity$p_strokes)),
-    fmt6(as.numeric(complexity$penalty$log_rt)),
-    fmt3(as.numeric(complexity$penalty$rt_ms)),
-    complexity$penalty$range_strokes$min,
-    complexity$penalty$range_strokes$max
-  )
-)
-```
-
                    metric    value
     1       edf (strokes)    2.656
     2         F statistic  248.842
@@ -110,10 +45,6 @@ data.frame(
     5        RT span (ms)  244.060
     6 penalty strokes min     21.5
     7 penalty strokes max       25
-
-``` r
-knitr::include_graphics(here("outputs", "figures", "visual_complexity_penalty.png"))
-```
 
 ![](../outputs/figures/visual_complexity_penalty.png)
 
