@@ -64,16 +64,6 @@ This repo bundles the **scientific-thinking** skill cards from K-Dense AI’s [C
 
 The skill content is licensed under MIT per `skills/scientific-thinking/LICENSE.md`, and each document skill subfolder carries additional notices where provided by the source project.
 
-## Talk slides
-
-Render the concrete deck (PPTX) to `outputs/`:
-
-```bash
-make slides
-```
-
-The rule uses `quarto render` via the same environment wrapper and moves the generated file into `outputs/deliverables/agentic-ai-concrete/` for review.
-
 ## Attribution
 
 * SCLP: Wang, Y., Wang, Y., Chen, Q., & Keuleers, E. (2025). Simplified Chinese lexicon project: A lexical decision database with 8,105 characters and 4,864 pseudocharacters. Behavior Research Methods. [DOI][sclp-doi]
