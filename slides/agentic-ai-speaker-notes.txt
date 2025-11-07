@@ -1,0 +1,26 @@
+01: 
+02: Timing: 0:00–1:30. Set the capability frame and the “Ask → Plan → Do → Record” loop.
+03: Timing: 1:30–3:00. Define agents as planner, tool-caller, executor, reporter.
+04: Timing: 3:00–4:00. Emphasise that it is R-focused but portable.
+05: Timing: 4:00–4:20. Name systems briefly; no deep dive.
+06: Timing: 4:20–5:30. Keep brand-agnostic; students use what is available.
+07: Timing: 5:30–6:30. Mention without prices; institutions vary.
+08: Timing: 6:30–8:00. Teach patterns, not price lists.
+09: Timing: 8:00–8:15. Shift from tools to practice.
+10: Timing: 8:15–9:30. Capability and provenance, not hype.
+11: Timing: 9:30–11:00. Keep pragmatic and actionable.
+12: Timing: 11:00–11:15. From ideas to one runnable pipeline.
+13: Timing: 11:15–12:30. Agents arrive “cold”; containers standardise starts.
+14: Timing: 12:30–13:30. Show structure you will actually run.
+15: Timing: 13:30–14:45. Makefile first; upgrade later if needed.
+16: Timing: 14:45–15:00. Language-science example; tiny lawful slices.
+17: Timing: 15:00–16:00. Keep datasets small; ship locally.
+18: Timing: 16:00–17:00. Prepare a fallback recording.
+19: Timing: 17:00–23:00. Small change + re-run + visible diff.
+20: Timing: 23:00–24:30. Draft interactively, execute by script.
+21: Timing: 24:30–24:45. Light-touch process; keep humans engaged.
+22: Timing: 24:45–26:15. One screenshot of a PR with a small diff.
+23: Timing: 26:15–27:45. Manuscript pulls numbers from results tables.
+24: Timing: 27:45–28:00. Leave time buffer for Q&A up to 40:00.
+25: Timing: 28:00–29:00. Close with four rules of thumb.
+26: Timing: 29:00–40:00. Keep a slide visible with repo URL and a QR code placeholder.

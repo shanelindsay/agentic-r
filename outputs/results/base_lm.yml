@@ -1,0 +1,14 @@
+id: base_lm
+title: 'Baseline linear model: log frequency + strokes'
+model: lm(mean_log_rt ~ log_freq + strokes)
+n_obs: 3852
+coefficients:
+  intercept: 6.452355
+  log_freq: -0.070823
+  strokes: 0.013355
+r2: 0.433654
+adj_r2: 0.43336
+sigma: 0.099372
+aic: -6851.159511
+bic: -6826.13412
+timestamp: 2025-11-01T18:00:00+0000

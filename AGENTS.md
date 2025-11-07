@@ -1,0 +1,180 @@
+# Agents Guide
+
+This document defines how agents work in this repo. It is **policy**: follow it unless a task explicitly says otherwise. Goals: clarity, reproducibility, auditable steps.
+
+Use APA style 7th edition when writing outputs (i.e. reports, qmd)
+
+---
+
+## 1. Context
+
+- Priorities: reproducibility, clarity, well-documented workflows.
+- Default approach: prefer simple, auditable steps over clever automation.
+
+
+You may be asked to run new analyses. The surface for output lives in `reports/results.qmd`; figures, numbers, and narrative APA prose should ultimately be output in that rendered document. 
+
+### 1.1 Directory contract
+
+- `R/` → reusable functions only; no side effects on import; no top-level I/O.
+- `scripts/` → orchestration, CLI entry points, diagnostics helpers (small, no heavy compute).
+- `reports/` → Quarto views that **read** pipeline outputs (QC, diagnostics, inference stubs).
+- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports) - ensure these are committed (for review)
+
+### 1.2 Non-negotiables
+
+1. Do not add new compute into QMDs. If a report needs data that does not exist, write it earier in the pipeline.
+2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
+3. Prefer plain-text, diffable artefacts (CSV, MD, YAML) in `outputs/`. Exceptions are heavy outputs (e.g. slow-fitting models, use .rds)
+4. Use `here::here()` for all paths. No relative `../` or `getwd()` assumptions.
+
+---
+
+## 2. Platforms and general rules
+
+- Cloud: expect containerised tools and fixed resources. Long jobs may time out.
+- Laptop: respect limited resources and mixed OS quirks (Windows or Linux).
+- Parallel agents may run locally and in the cloud. Sync often and separate concerns.
+
+- Prefer tidyverse coding in general.
+
+---
+
+## 3. Environment wrapper (mandatory)
+
+- Always execute R and Quarto via `./dev/run-in-env.sh`.
+- Shared environment families: `r-core` (analysis, targets, Quarto) and `r-bayes` (adds Stan toolchain). Select via `RUN_ENV_NAME` or `env/STACK`.
+- Use per-project R packages via `R_LIBS_USER=$PWD/.rlib`.
+
+### 3.1 Quick start
+
+```bash
+# Run R scripts deterministically
+./dev/run-in-env.sh Rscript scripts/01_prepare.R
+./dev/run-in-env.sh Rscript scripts/02_base_lm.R
+
+# Render a Quarto document
+./dev/run-in-env.sh quarto render reports/results.qmd --output-dir outputs/reports
+
+# Start an interactive R session
+./dev/run-in-env.sh R
+
+# Fast HTML iteration with the local Quarto profile
+QUARTO_PROFILE=local make report
+```
+The profile configuration lives at `reports/_quarto-profile-local.yaml`.
+
+---
+
+## 4. Git and PR workflow
+
+We use GitHub for code, manuscript preparation, and project management. When you see “issue”, assume a GitHub Issue. Use `gh` CLI where convenient.
+
+### 4.1 Branching and commits
+
+- Work on `main`. Do not create long-lived feature branches unless agreed. If you suggest a branch, get approval.
+- Be clear which branch you are on. Pull regularly so `main` stays in sync.
+- Commit small, logical changes frequently. Push or pull often.
+- Keep the working tree tidy. Avoid untracked files. Default to tracking files; if unsure, ask.
+- Track **generated outputs under `outputs/`** (CSV, MD, HTML, PNG, and similar) so reviewers see what changed.
+- Do not delete generated files in `outputs/` unless explicitly requested or they are superseded by a rename in the same PR. Call this out in the PR body.
+
+### 4.2 Commit rules
+
+- Keep commits frequent to keep the remote current.
+- Reference Issues in commit titles when relevant, for example `fix: handle null IDs #123`.
+- Keep commits atomic. Commit only the files you changed and list each path explicitly.  
+  `git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
+- For brand-new files:  
+  `git restore --staged :/ && git add "path/to/file1" "path/to/file2" && git commit -m "<scoped message>" -- "path/to/file1" "path/to/file2"`
+- Always double-check `git status` before committing.
+- Delete unused or obsolete files when your changes make them irrelevant. Revert files only when the change is yours or explicitly requested.
+- Coordinate with other agents before removing their in-progress edits. Do not revert or delete work you did not author without agreement.
+- Never run destructive Git operations such as `git reset --hard`, `rm` of tracked files, or checking out older commits to overwrite the working tree unless the user gives explicit written instruction here.
+- Before deleting a file to resolve a local failure, stop and ask.
+- Do not amend commits unless you have explicit written approval in the task thread.
+- Moving, renaming, and restoring files is allowed.
+- Quote paths containing brackets or parentheses when staging or committing.
+- When running `git rebase`, avoid opening editors. Use `GIT_EDITOR=:` and `GIT_SEQUENCE_EDITOR=:` or pass `--no-edit`.
+
+### 4.3 Code review and approval
+
+- CI is not assumed.
+- Use Pull Requests for review. You can ask for reviews on commits.
+- Reference the driving Issue in the PR description. Include a closing keyword, for example `Closes #123`.
+
+---
+
+## 5. Development workflow
+
+Prefer text-based, diffable artefacts and keep compute in the pipeline.
+
+### 5.1 WRI cycle
+
+1. **Write**: report code in `reports/*.qmd`.
+2. **Run**: `make analyse` then `make report` to render QMD to `outputs/reports/...`.
+3. **Inspect**: review rendered HTML or MD in `outputs/...`.
+4. **Iterate**: refine; commit both code and updated `outputs/`.
+
+Ensure outputs/reports are committed (for the user to review them)
+
+### 5.2 Principles for documents and code
+
+- Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in publication-style format and consumes figures and tables generated earlier.
+- The data processing and analysis pipeline should be simple, reproducible, and shareable on OSF.
+- Readers care about the finished result. Avoid historical comments unless they aid understanding.
+- Do not create ad hoc `v2` files. Use Git for versioning.
+- Use Makefiles where helpful to automate the pipeline.
+- QMDs are views and logs. Heavy compute belongs in `R/`.
+- Do not mix computation and interpretation. Interpretive prose is based on QMD outputs. Inline numbers when helpful.
+- YAML side outputs generated mid-pipeline may be read by `manuscript.qmd`. Prefer YAML over `.rds` for diffability.
+- Heavy R objects, for example Bayesian mixed models, can be saved as `.rds`.
+- Exploratory reports sit outside the core reproducible pipeline.
+- Quarto defaults: `freeze: auto`, `echo: true`. 
+
+### 5.3 Path management
+
+- Use `here()` for all file paths. Include a `.here` file if needed.
+
+### 5.4 Tests
+
+- QMDs must render.
+- Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown to ensure any changes you made worked
+- Add other tests as necessary.
+
+### 5.6 Core implementation principles
+
+- Fail fast and surface errors early.
+- Do not use defensive programming that hides missing data. Fix root causes.
+- Assume a deterministic pipeline. If data is missing, fix upstream.
+- Keep the file system organised. Use `scratch/` or `tmp/` for temporary work.
+- Keep debugging work separate or avoid committing it once fixed.
+- Implement the simplest solution that works. Avoid over-engineering.
+- Favour clarity and explainability over performance or terseness. Assume the code will be shared. Avoid obvious comments.
+- Avoid unnecessary intermediate data structures.
+
+### 5.7 Long-running tooling and stuck runs
+
+- Long-running tooling such as tests, Docker Compose, or migrations must use sensible timeouts or run in non-interactive batch mode. Never leave a shell command waiting indefinitely.
+- If a Codex run is too long or stuck on tool calling, apply the same rule. Use non-interactive batch, explicit timeouts, or exit and resume with log inspection.
+
+## 6. Adding a new analysis 
+
+We keep things explicit and reviewable.
+
+**Contract**
+- One analysis per script under `scripts/` named `NN_slug.R`.
+- Each script reads `outputs/data/processed.csv` using `here::here(...)` and writes a small, diffable YAML to `outputs/results/slug.yml`. Include at least `id`, `title`, and key summary numbers (for example `n_obs`, `sd_rt`,`r2`, `coefficients`, `timestamp`). Optional `figures` can list file paths under `outputs/figures/`.
+- No changes to Quarto other than adding a new manual section that reads your YAML, adds supporting text and optionally figures.
+
+**Steps**
+1. Create `scripts/NN_slug.R` that writes `outputs/results/slug.yml`.
+2. In the **Makefile**, append `outputs/results/slug.yml` to `ANALYSES` and add a rule:
+   ```
+   outputs/results/slug.yml: outputs/data/processed.csv scripts/NN_slug.R
+   	$(R_CMD) scripts/NN_slug.R
+   ```
+3. In `reports/results.qmd`, copy the baseline section, change the heading and YAML filename, and print the fields you wrote.
+4. Run `make analyse` then `make report`. Commit the script, YAML, and any figures, then open a PR.
+
+---
