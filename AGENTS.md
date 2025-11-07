@@ -1,31 +1,31 @@
+
+
+```md
 # Agents Guide
 
 This document defines how agents work in this repo. It is **policy**: follow it unless a task explicitly says otherwise. Goals: clarity, reproducibility, auditable steps.
-
-Use APA style 7th edition when writing outputs (i.e. reports, qmd)
 
 ---
 
 ## 1. Context
 
+- User:
+- Work:
 - Priorities: reproducibility, clarity, well-documented workflows.
 - Default approach: prefer simple, auditable steps over clever automation.
-
-
-You may be asked to run new analyses. The surface for output lives in `reports/results.qmd`; figures, numbers, and narrative APA prose should ultimately be output in that rendered document. 
 
 ### 1.1 Directory contract
 
 - `R/` → reusable functions only; no side effects on import; no top-level I/O.
 - `scripts/` → orchestration, CLI entry points, diagnostics helpers (small, no heavy compute).
 - `reports/` → Quarto views that **read** pipeline outputs (QC, diagnostics, inference stubs).
-- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports) - ensure these are committed (for review)
+- `outputs/` → all rendered artefacts (figures, tables, MD/HTML from reports).
 
 ### 1.2 Non-negotiables
 
-1. Do not add new compute into QMDs. If a report needs data that does not exist, write it earier in the pipeline.
+1. Do not add new compute into QMDs. If a report needs data that does not exist, add a target and a function.
 2. Do not put rendered artefacts under `reports/`. QMDs must render into `outputs/...`.
-3. Prefer plain-text, diffable artefacts (CSV, MD, YAML) in `outputs/`. Exceptions are heavy outputs (e.g. slow-fitting models, use .rds)
+3. Prefer plain-text, diffable artefacts (CSV, MD, YAML) in `outputs/`.
 4. Use `here::here()` for all paths. No relative `../` or `getwd()` assumptions.
 
 ---
@@ -35,7 +35,6 @@ You may be asked to run new analyses. The surface for output lives in `reports/r
 - Cloud: expect containerised tools and fixed resources. Long jobs may time out.
 - Laptop: respect limited resources and mixed OS quirks (Windows or Linux).
 - Parallel agents may run locally and in the cloud. Sync often and separate concerns.
-
 - Prefer tidyverse coding in general.
 
 ---
@@ -51,18 +50,14 @@ You may be asked to run new analyses. The surface for output lives in `reports/r
 ```bash
 # Run R scripts deterministically
 ./dev/run-in-env.sh Rscript scripts/01_prepare.R
-./dev/run-in-env.sh Rscript scripts/02_base_lm.R
+./dev/run-in-env.sh Rscript scripts/02_model.R
 
 # Render a Quarto document
-./dev/run-in-env.sh quarto render reports/results.qmd --output-dir outputs/reports
+./dev/run-in-env.sh quarto render reports/analysis.qmd --output-dir outputs/reports
 
 # Start an interactive R session
 ./dev/run-in-env.sh R
-
-# Fast HTML iteration with the local Quarto profile
-QUARTO_PROFILE=local make report
 ```
-The profile configuration lives at `reports/_quarto-profile-local.yaml`.
 
 ---
 
@@ -111,26 +106,24 @@ Prefer text-based, diffable artefacts and keep compute in the pipeline.
 
 ### 5.1 WRI cycle
 
-1. **Write**: report code in `reports/*.qmd`.
-2. **Run**: `make analyse` then `make report` to render QMD to `outputs/reports/...`.
-3. **Inspect**: review rendered HTML or MD in `outputs/...`.
+1. **Write**: Report code in `reports/*.qmd`.
+2. **Run**: build with `{targets}` and render QMD to `outputs/reports/...`.
+3. **Inspect**: review rendered MD or HTML in `outputs/...`.
 4. **Iterate**: refine; commit both code and updated `outputs/`.
-
-Ensure outputs/reports are committed (for the user to review them)
 
 ### 5.2 Principles for documents and code
 
-- Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in publication-style format and consumes figures and tables generated earlier.
+- Separate interpretation from intermediate steps. `manuscript.qmd` presents final results in publication-ready format via apaquarto and consumes figures and tables generated earlier.
 - The data processing and analysis pipeline should be simple, reproducible, and shareable on OSF.
 - Readers care about the finished result. Avoid historical comments unless they aid understanding.
 - Do not create ad hoc `v2` files. Use Git for versioning.
 - Use Makefiles where helpful to automate the pipeline.
-- QMDs are views and logs. Heavy compute belongs in `R/`.
+- QMDs are views and logs. Heavy compute belongs in targets and `R/`.
 - Do not mix computation and interpretation. Interpretive prose is based on QMD outputs. Inline numbers when helpful.
 - YAML side outputs generated mid-pipeline may be read by `manuscript.qmd`. Prefer YAML over `.rds` for diffability.
 - Heavy R objects, for example Bayesian mixed models, can be saved as `.rds`.
 - Exploratory reports sit outside the core reproducible pipeline.
-- Quarto defaults: `freeze: auto`, `echo: true`. 
+- Quarto defaults: `freeze: true`, `echo: true`. See the freeze policy.
 
 ### 5.3 Path management
 
@@ -139,8 +132,16 @@ Ensure outputs/reports are committed (for the user to review them)
 ### 5.4 Tests
 
 - QMDs must render.
-- Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown to ensure any changes you made worked
+- Outputs must be free from errors and unexpected `NA`s. Always check the rendered Markdown.
 - Add other tests as necessary.
+
+### 5.5 Quarto freeze policy
+
+Quarto writes cached renders into `_freeze/` directories adjacent to each QMD, for example `outputs/reports/exp1/_freeze/06_exp1_report/`. These directories are ignored by Git but must remain in place for deterministic rebuilds.
+
+- Production or stable runs: prefer `freeze: true` for exact outputs and deterministic rebuilds.
+- Local development: use the `local` profile (`configs/profiles/local.yaml`) with `reports: { freeze: auto }` to re-render only changed chunks.
+- Before tagging outputs, restore `freeze: true` or remove the local profile and confirm the corresponding `_freeze/` directories are populated.
 
 ### 5.6 Core implementation principles
 
@@ -157,24 +158,5 @@ Ensure outputs/reports are committed (for the user to review them)
 
 - Long-running tooling such as tests, Docker Compose, or migrations must use sensible timeouts or run in non-interactive batch mode. Never leave a shell command waiting indefinitely.
 - If a Codex run is too long or stuck on tool calling, apply the same rule. Use non-interactive batch, explicit timeouts, or exit and resume with log inspection.
-
-## 6. Adding a new analysis 
-
-We keep things explicit and reviewable.
-
-**Contract**
-- One analysis per script under `scripts/` named `NN_slug.R`.
-- Each script reads `outputs/data/processed.csv` using `here::here(...)` and writes a small, diffable YAML to `outputs/results/slug.yml`. Include at least `id`, `title`, and key summary numbers (for example `n_obs`, `sd_rt`,`r2`, `coefficients`, `timestamp`). Optional `figures` can list file paths under `outputs/figures/`.
-- No changes to Quarto other than adding a new manual section that reads your YAML, adds supporting text and optionally figures.
-
-**Steps**
-1. Create `scripts/NN_slug.R` that writes `outputs/results/slug.yml`.
-2. In the **Makefile**, append `outputs/results/slug.yml` to `ANALYSES` and add a rule:
-   ```
-   outputs/results/slug.yml: outputs/data/processed.csv scripts/NN_slug.R
-   	$(R_CMD) scripts/NN_slug.R
-   ```
-3. In `reports/results.qmd`, copy the baseline section, change the heading and YAML filename, and print the fields you wrote.
-4. Run `make analyse` then `make report`. Commit the script, YAML, and any figures, then open a PR.
 
 ---
