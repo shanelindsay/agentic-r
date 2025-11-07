@@ -2,8 +2,8 @@
 
 A minimal, R-focused, agent-friendly pipeline for a **lexical decision** demo:
 - **Task:** character-level lexical decision (RT/accuracy).
-- **Data:** tiny slices from the Simplified Chinese Lexicon Project (SCLP; trial-level) and the Chinese Lexical Database (CLD; predictors).
-- **Pipeline:** `make` orchestrates three tiny steps plus a report → writes **diffable** outputs under `outputs/` (for example `outputs/results/base_lm.yml`).
+- **Data:** Simplified Chinese Lexicon Project (SCLP; trial-level) and the Chinese Lexical Database (CLD; predictors).
+- **Pipeline:** `make` orchestrates scripts for a report → writes **diffable** (text based, i.e. not .rds) machine and human readable outputs under `outputs/` (for example `outputs/results/base_lm.yml`).
 
 ## Why this repo?
 Agents (e.g., Codex/Claude Code/Cursor) behave like new lab members arriving cold. A tidy repo + Makefile + small scripts gives them structure; you stay in control by running scripts deterministically and reviewing diffs.
@@ -43,9 +43,9 @@ The profile configuration lives at `reports/_quarto-profile-local.yaml`.
 
 See licences and fetch locations in `docs/data-sources.md`.
 
-* **SCLP trial-level data**: trial-level lexical decision for 8,105 characters + 4,864 pseudocharacters. Download the full data from OSF (see paper) and create a tiny lawful slice (for example, select a handful of rows in R) before committing it as `data/raw/sclp_sample.csv`. (See [sclp-doi])
+* **SCLP trial-level data**: trial-level lexical decision for 8,105 characters + 4,864 pseudocharacters. Download the full data from OSF (see paper). (See [sclp-doi])
 
-* **CLD predictors**: lexical variables for simplified Mandarin words. Download from the CLD website and create a small slice `data/raw/cld_sample.csv` with at least `char`, `log_freq`, `strokes`. (See [cld-paper])
+* **CLD predictors**: lexical variables for simplified Mandarin words. Download from the CLD website, variables such as  `char`, `log_freq`, `strokes`. (See [cld-paper])
 
 ## How it works
 
