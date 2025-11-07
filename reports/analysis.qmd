@@ -1,0 +1,175 @@
+---
+title: "Agentic AI Demo Report"
+format:
+  html:
+    toc: true
+  pdf:
+    toc: true
+    pdf-engine: tectonic
+  docx: default
+  gfm: default
+freeze: auto
+execute:
+  echo: true
+  keep-md: true
+---
+
+```{r}
+#| label: setup
+#| message: false
+library(yaml)
+library(readr)
+
+metrics_path <- here::here("outputs","results","metrics.yml")
+cleaning_path <- here::here("outputs","results","cleaning.yml")
+fig_path <- here::here("outputs","figures","rt_hist.png")
+freq_tidy_path <- here::here("outputs","results","character_frequency_model_tidy.csv")
+freq_glance_path <- here::here("outputs","results","character_frequency_model_glance.csv")
+freq_fig_path <- here::here("outputs","figures","character_frequency_rt_vs_freq.png")
+complexity_tidy_path <- here::here("outputs","results","visual_complexity_model_tidy.csv")
+complexity_glance_path <- here::here("outputs","results","visual_complexity_model_glance.csv")
+complexity_summary_path <- here::here("outputs","results","visual_complexity_penalty_summary.yml")
+complexity_partial_path <- here::here("outputs","data","visual_complexity_partial_effect.csv")
+complexity_fig_path <- here::here("outputs","figures","visual_complexity_partial_effect.png")
+
+metrics <- yaml::read_yaml(metrics_path)
+cleaning <- yaml::read_yaml(cleaning_path)
+freq_model_tidy <- read_csv(freq_tidy_path, show_col_types = FALSE)
+freq_model_glance <- read_csv(freq_glance_path, show_col_types = FALSE)
+complexity_model_tidy <- read_csv(complexity_tidy_path, show_col_types = FALSE)
+complexity_model_glance <- read_csv(complexity_glance_path, show_col_types = FALSE)
+complexity_partial <- read_csv(complexity_partial_path, show_col_types = FALSE)
+complexity_summary <- yaml::read_yaml(complexity_summary_path)
+N <- as.integer(metrics$n_obs)
+
+# helpers for formatting
+fmt3 <- function(x) sprintf("%.3f", x)
+fmt6 <- function(x) sprintf("%.6f", x)
+fmt1 <- function(x) sprintf("%.1f", x)
+fmt0 <- function(x) sprintf("%.0f", x)
+fmt_p <- function(p) {
+  if (is.na(p)) return("= NA")
+  if (p < .001) return("< .001")
+  formatted <- sprintf("= %.3f", p)
+  sub("= 0\\.", "= .", formatted)
+}
+
+freq_coef <- freq_model_tidy$Estimate[freq_model_tidy$term == "log_freq"]
+strokes_coef <- freq_model_tidy$Estimate[freq_model_tidy$term == "strokes"]
+freq_pct <- (exp(freq_coef) - 1) * 100
+strokes_pct <- (exp(strokes_coef) - 1) * 100
+
+complexity_estimate <- complexity_model_tidy$Estimate[1]
+complexity_se <- complexity_model_tidy[["Std. Error"]][1]
+complexity_t_value <- complexity_model_tidy[["t value"]][1]
+complexity_p_value <- complexity_model_tidy[["Pr(>|t|)"]][1]
+complexity_penalty_pct <- complexity_model_tidy$penalty_pct[1]
+complexity_r2 <- complexity_model_glance$r_squared[1]
+complexity_df_resid <- complexity_model_glance$df_residual[1]
+complexity_n <- complexity_model_glance$n[1]
+complexity_sigma <- complexity_model_glance$sigma[1]
+complexity_baseline_strokes <- complexity_summary$reference$strokes
+complexity_baseline_rt <- complexity_summary$reference$predicted_rt_ms
+complexity_peak_strokes <- complexity_summary$max_penalty$strokes
+complexity_peak_penalty <- complexity_summary$max_penalty$penalty_ms
+complexity_peak_rt <- complexity_summary$max_penalty$predicted_rt_ms
+complexity_slope <- complexity_summary$slope$rate_ms_per_stroke
+complexity_slope_start <- complexity_summary$slope$start_strokes
+complexity_slope_end <- complexity_summary$slope$end_strokes
+```
+
+## Overview
+
+This report reads pre-computed outputs from the simple demo pipeline.
+
+- Processed data: `outputs/data/processed.csv`
+- Cleaning summary: `outputs/results/cleaning.yml`
+- Model metrics: `outputs/results/metrics.yml`
+
+## Cleaning Summary
+
+The pipeline kept `r cleaning$counts$kept_trials` of `r cleaning$counts$total_trials` trials (dropped `r cleaning$counts$dropped_trials`).
+Settings: correct-only = `r cleaning$trimming$correct_only`, RT range = `r cleaning$trimming$rt_min_ms`–`r cleaning$trimming$rt_max_ms` ms.
+
+```{r}
+data.frame(
+  setting = c("correct_only","rt_min_ms","rt_max_ms","total_trials","kept_trials","dropped_trials"),
+  value = c(
+    as.character(cleaning$trimming$correct_only),
+    cleaning$trimming$rt_min_ms,
+    cleaning$trimming$rt_max_ms,
+    cleaning$counts$total_trials,
+    cleaning$counts$kept_trials,
+    cleaning$counts$dropped_trials
+  )
+)
+
+```
+## RT Histogram (kept trials)
+
+```{r}
+knitr::include_graphics(fig_path)
+```
+
+## Model Metrics
+
+Model: `r metrics$model`  (N = `r N`)
+
+R² = `r fmt3(as.numeric(metrics$r2))`.
+
+```{r}
+#| label: optional-metrics
+cat(paste0("Adjusted R² = ", fmt3(as.numeric(metrics$adj_r2)), ".\n\n"))
+cat(paste0("Residual sigma = ", fmt3(as.numeric(metrics$sigma)), ".\n\n"))
+cat("Information criteria:\n\n")
+print(data.frame(
+  metric = c("AIC", "BIC"),
+  value = c(fmt3(as.numeric(metrics$aic)), fmt3(as.numeric(metrics$bic)))
+))
+```
+
+Coefficients:
+
+```{r}
+data.frame(
+  term = c("intercept","log_freq","strokes"),
+  estimate = c(
+    fmt6(as.numeric(metrics$coefficients$intercept)),
+    fmt6(as.numeric(metrics$coefficients$log_freq)),
+    fmt6(as.numeric(metrics$coefficients$strokes))
+  )
+)
+```
+
+## Character Frequency Model
+
+Character-level summaries (`outputs/data/character_frequency_model_data.csv`) were modelled with median lexical decision times as the outcome and predictors `log_freq` and `strokes`.
+
+```{r}
+knitr::kable(freq_model_tidy, digits = 3)
+```
+
+95% uncertainty for the combined fit: R² = `r fmt3(freq_model_glance$r_squared)`, sigma = `r fmt3(freq_model_glance$sigma)`.
+
+- `log_freq`: `r fmt3(freq_coef)` on the log scale → `r fmt3(freq_pct)`% faster median responses per one-unit increase in log frequency.
+- `strokes`: `r fmt3(strokes_coef)` on the log scale → `r fmt3(strokes_pct)`% slower median responses per additional stroke.
+
+```{r}
+knitr::include_graphics(freq_fig_path)
+```
+
+Median response times fall sharply from rare to moderately frequent characters, but the loess curve flattens once log frequency exceeds roughly 3, suggesting diminishing speed gains for the most common characters. The widening confidence band at high frequency reflects the sparse sample, so the apparent plateau should be revisited when more characters are available, yet the current evidence aligns with classic frequency saturation once visual complexity is held constant.
+
+## Visual Complexity Penalty
+
+To isolate the complexity penalty, we fit a linear regression predicting log median response time from log frequency and strokes. The model explained \(R^2 = `r fmt3(complexity_r2)`\) with *n* = `r complexity_n`, leaving `r fmt3(complexity_sigma)` residual log-millisecond noise. The strokes coefficient indicated slower responses for more complex characters (\(b = `r fmt3(complexity_estimate)`\), \(SE = `r fmt3(complexity_se)`\), \(t(`r fmt0(complexity_df_resid)`) = `r fmt3(complexity_t_value)`\), \(p `r fmt_p(complexity_p_value)`\)), equivalent to a `r fmt3(complexity_penalty_pct)`% increase in median response time per additional stroke when frequency is held fixed.
+
+```{r}
+knitr::kable(complexity_model_tidy, digits = 3)
+```
+
+```{r}
+knitr::include_graphics(complexity_fig_path)
+```
+
+Holding log frequency at its mean, predicted response times rose from `r fmt0(complexity_baseline_rt)` ms at `r fmt1(complexity_baseline_strokes)` strokes to `r fmt0(complexity_peak_rt)` ms at `r fmt1(complexity_peak_strokes)` strokes, a penalty of `r fmt0(complexity_peak_penalty)` ms concentrated at the top end of the sampled complexity range (see Figure). The slope over the final stroke increment was approximately `r fmt1(complexity_slope)` ms per stroke, underscoring that the penalty sharpens for the most intricate characters. Because only `r complexity_n` characters passed preprocessing, these estimates should be interpreted as preliminary benchmarks until broader coverage is available.
