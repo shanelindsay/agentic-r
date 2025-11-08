@@ -1,0 +1,68 @@
+id: subcomponent_joint
+title: Joint effects of whole-character and component familiarity
+model: lm(mean_log_rt ~ log_freq * sem_log_freq + log_freq * phon_log_freq + sem_log_freq
+  * phon_log_freq + strokes)
+n_obs: 2638
+coefficients:
+  (Intercept): 6.611596
+  log_freq: -0.288973
+  sem_log_freq: -0.00836
+  phon_log_freq: -0.011453
+  strokes: 0.009258
+  log_freq:sem_log_freq: 0.027164
+  log_freq:phon_log_freq: 0.038235
+  sem_log_freq:phon_log_freq: -0.004238
+fit:
+  r2: 0.395238
+  adj_r2: 0.393628
+  sigma: 0.095388
+  aic: -4901.25854
+  bic: -4848.358553
+freq_levels:
+- level: Low
+  label: Low (20th pct.)
+  quantile: 0.2
+  value: 0.060055
+- level: Medium
+  label: Medium (50th pct.)
+  quantile: 0.5
+  value: 0.403892
+- level: High
+  label: High (80th pct.)
+  quantile: 0.8
+  value: 1.389803
+component_effects:
+  semantic:
+  - overall_level: Low (20th pct.)
+    low_component: 3.3272026
+    high_component: 4.3678789
+    rt_change_ms: 12.83
+    rt_change_pct: 1.73
+  - overall_level: Medium (50th pct.)
+    low_component: 3.3272026
+    high_component: 4.3678789
+    rt_change_ms: 5.5
+    rt_change_pct: 0.77
+  - overall_level: High (80th pct.)
+    low_component: 3.3272026
+    high_component: 4.3678789
+    rt_change_ms: -13.08
+    rt_change_pct: -2.04
+  phonetic:
+  - overall_level: Low (20th pct.)
+    low_component: 1.6286329
+    high_component: 3.0192825
+    rt_change_ms: 26.89
+    rt_change_pct: 3.6
+  - overall_level: Medium (50th pct.)
+    low_component: 1.6286329
+    high_component: 3.0192825
+    rt_change_ms: 13.06
+    rt_change_pct: 1.82
+  - overall_level: High (80th pct.)
+    low_component: 1.6286329
+    high_component: 3.0192825
+    rt_change_ms: -22.18
+    rt_change_pct: -3.46
+figure: outputs/figures/component_familiarity_effects.png
+timestamp: 2025-11-07T20:14:44+0000
