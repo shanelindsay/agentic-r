@@ -1,0 +1,27 @@
+id: phon_family_pron_match
+title: Phonological family size × pronunciation regularity
+model: lm(mean_log_rt ~ log_freq_z + strokes_z + phon_family_z * pron_match)
+n_obs: 2638
+n_match: 855
+n_mismatch: 1783
+family_size_range:
+  min: 1.0
+  max: 18.0
+interaction:
+  term: phon_family_z:pron_matchmismatch
+  estimate: 0.002465
+  std_error: 0.004203
+  t_value: 0.586537
+  p_value: 0.557565
+main_effects:
+  phon_family_z: -0.003046
+  pron_match_mismatch: -0.0015
+fit:
+  r2: 0.350724
+  adj_r2: 0.34949
+  sigma: 0.098799
+predicted_effects_ms:
+  match_delta_ms: -7.891224
+  mismatch_delta_ms: -1.502725
+figure: outputs/figures/phon_family_pron_interaction.png
+timestamp: 2025-11-07T19:23:00+0000
