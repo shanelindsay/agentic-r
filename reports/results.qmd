@@ -20,6 +20,7 @@ fmt6 <- function(x) sprintf("%.6f", x)
 
 cleaning <- yaml::read_yaml(here("outputs", "results", "cleaning.yml"))
 base <- yaml::read_yaml(here("outputs", "results", "base_lm.yml"))
+complexity <- yaml::read_yaml(here("outputs", "results", "visual_complexity_penalty.yml"))
 ```
 
 ## Cleaning
@@ -70,6 +71,31 @@ data.frame(
 
 R² `r fmt3(as.numeric(base$r2))`; adjusted R² `r fmt3(as.numeric(base$adj_r2))`; residual sigma `r fmt3(as.numeric(base$sigma))`.
 AIC `r fmt3(as.numeric(base$aic))`, BIC `r fmt3(as.numeric(base$bic))`.
+
+## Visual complexity penalty
+
+The partial effect of strokes remains reliable after holding frequency at its median (`r complexity$reference_log_freq`). The smooth term uses `r fmt3(as.numeric(complexity$edf_strokes))` effective degrees of freedom (F = `r fmt3(as.numeric(complexity$f_strokes))`, p = `r fmt6(as.numeric(complexity$p_strokes))`). The predicted range from the least to most complex characters implies a `r fmt3(as.numeric(complexity$penalty$log_rt))` increase in log RT (about `r fmt3(as.numeric(complexity$penalty$rt_ms))` ms). The strongest penalty lies between `r complexity$penalty$range_strokes$min` and `r complexity$penalty$range_strokes$max` strokes (top `r complexity$penalty$percentile * 100`% of the effect curve).
+
+```{r}
+#| label: complexity-table
+data.frame(
+  metric = c("edf (strokes)", "F statistic", "p-value", "log RT span", "RT span (ms)", "penalty strokes min", "penalty strokes max"),
+  value = c(
+    fmt3(as.numeric(complexity$edf_strokes)),
+    fmt3(as.numeric(complexity$f_strokes)),
+    fmt6(as.numeric(complexity$p_strokes)),
+    fmt6(as.numeric(complexity$penalty$log_rt)),
+    fmt3(as.numeric(complexity$penalty$rt_ms)),
+    complexity$penalty$range_strokes$min,
+    complexity$penalty$range_strokes$max
+  )
+)
+```
+
+```{r}
+#| label: complexity-partial
+knitr::include_graphics(here("outputs", "figures", "visual_complexity_penalty.png"))
+```
 
 <!--
 To add another analysis:

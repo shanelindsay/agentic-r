@@ -21,7 +21,8 @@ outputs/data/processed.csv outputs/data/trials_filtered.csv outputs/results/clea
 
 # Analyses: explicit list in display order
 ANALYSES := \
-	outputs/results/base_lm.yml
+	outputs/results/base_lm.yml \
+	outputs/results/visual_complexity_penalty.yml
 # append new analyses here:
 # 	outputs/results/neighbour_density.yml \
 # 	outputs/results/interaction_rt_accuracy.yml
@@ -34,6 +35,9 @@ outputs/results/base_lm.yml: outputs/data/processed.csv scripts/02_base_lm.R
 # When you add an analysis, add a matching rule:
 # outputs/results/neighbour_density.yml: outputs/data/processed.csv scripts/03_neighbour_density.R
 # 	$(R_CMD) scripts/03_neighbour_density.R
+
+outputs/results/visual_complexity_penalty.yml: outputs/data/processed.csv scripts/03_visual_complexity_penalty.R
+	$(R_CMD) scripts/03_visual_complexity_penalty.R
 
 # Results document depends on named analyses and cleaning artefacts
 report: $(ANALYSES) outputs/results/cleaning.yml outputs/figures/rt_hist.png reports/results.qmd

@@ -1,46 +1,12 @@
 # Results
 
 
-``` r
-library(yaml)
-library(here)
-```
-
     here() starts at /root/repo
-
-``` r
-fmt3 <- function(x) sprintf("%.3f", x)
-fmt6 <- function(x) sprintf("%.6f", x)
-
-cleaning <- yaml::read_yaml(here("outputs", "results", "cleaning.yml"))
-base <- yaml::read_yaml(here("outputs", "results", "base_lm.yml"))
-```
 
 ## Cleaning
 
 The pipeline kept 137133 of 235016 trials (dropped 97883). Settings:
 correct-only = TRUE, RT range = 200–2000 ms.
-
-``` r
-data.frame(
-  setting = c(
-    "correct_only",
-    "rt_min_ms",
-    "rt_max_ms",
-    "total_trials",
-    "kept_trials",
-    "dropped_trials"
-  ),
-  value = c(
-    as.character(cleaning$trimming$correct_only),
-    cleaning$trimming$rt_min_ms,
-    cleaning$trimming$rt_max_ms,
-    cleaning$counts$total_trials,
-    cleaning$counts$kept_trials,
-    cleaning$counts$dropped_trials
-  )
-)
-```
 
              setting  value
     1   correct_only   TRUE
@@ -50,24 +16,9 @@ data.frame(
     5    kept_trials 137133
     6 dropped_trials  97883
 
-``` r
-knitr::include_graphics(here("outputs", "figures", "rt_hist.png"))
-```
-
 ![](../outputs/figures/rt_hist.png)
 
 ## Baseline model: frequency and strokes
-
-``` r
-data.frame(
-  term = c("intercept", "log_freq", "strokes"),
-  estimate = c(
-    fmt6(as.numeric(base$coefficients$intercept)),
-    fmt6(as.numeric(base$coefficients$log_freq)),
-    fmt6(as.numeric(base$coefficients$strokes))
-  )
-)
-```
 
            term  estimate
     1 intercept  6.452355
@@ -76,6 +27,26 @@ data.frame(
 
 R² 0.434; adjusted R² 0.433; residual sigma 0.099. AIC -6851.160, BIC
 -6826.134.
+
+## Visual complexity penalty
+
+The partial effect of strokes remains reliable after holding frequency
+at its median (0.605111). The smooth term uses 2.656 effective degrees
+of freedom (F = 248.842, p = 0.000000). The predicted range from the
+least to most complex characters implies a 0.340 increase in log RT
+(about 244.060 ms). The strongest penalty lies between 21.5 and 25
+strokes (top 85% of the effect curve).
+
+                   metric    value
+    1       edf (strokes)    2.656
+    2         F statistic  248.842
+    3             p-value 0.000000
+    4         log RT span 0.340020
+    5        RT span (ms)  244.060
+    6 penalty strokes min     21.5
+    7 penalty strokes max       25
+
+![](../outputs/figures/visual_complexity_penalty.png)
 
 <!--
 To add another analysis:

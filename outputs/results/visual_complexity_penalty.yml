@@ -1,0 +1,16 @@
+id: visual_complexity_penalty
+title: Visual complexity penalty controlling for frequency
+model: mgcv::gam(mean_log_rt ~ s(strokes, k = 5) + log_freq, method = 'REML')
+n_obs: 3852
+edf_strokes: 2.656338
+f_strokes: 248.842283
+p_strokes: 0.0
+penalty:
+  log_rt: 0.34002
+  rt_ms: 244.06
+  percentile: 0.85
+  range_strokes:
+    min: 21.5
+    max: 25.0
+reference_log_freq: 0.605111
+timestamp: 2025-11-07T19:19:57+0000
