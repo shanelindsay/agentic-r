@@ -84,6 +84,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#cleaning" id="toc-cleaning" class="nav-link active" data-scroll-target="#cleaning">Cleaning</a></li>
   <li><a href="#baseline-model-frequency-and-strokes" id="toc-baseline-model-frequency-and-strokes" class="nav-link" data-scroll-target="#baseline-model-frequency-and-strokes">Baseline model: frequency and strokes</a></li>
+  <li><a href="#frequency-effect-with-complexity-adjustment" id="toc-frequency-effect-with-complexity-adjustment" class="nav-link" data-scroll-target="#frequency-effect-with-complexity-adjustment">Frequency effect with complexity adjustment</a></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="results.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li><li><a href="results.docx"><i class="bi bi-file-word"></i>MS Word</a></li><li><a href="results.md"><i class="bi bi-file-code"></i>Github (GFM)</a></li></ul></div></nav>
 </div>
@@ -116,9 +117,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fmt3 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.3f"</span>, x)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>fmt6 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.6f"</span>, x)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>cleaning <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"cleaning.yml"</span>))</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"base_lm.yml"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>fmt1 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.1f"</span>, x)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>cleaning <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"cleaning.yml"</span>))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"base_lm.yml"</span>))</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>freq_complexity <span class="ot">&lt;-</span> yaml<span class="sc">::</span><span class="fu">read_yaml</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"results"</span>, <span class="st">"freq_rt_complexity.yml"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="cleaning" class="level2">
 <h2 class="anchored" data-anchor-id="cleaning">Cleaning</h2>
@@ -182,6 +185,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>R² 0.434; adjusted R² 0.433; residual sigma 0.099. AIC -6851.160, BIC -6826.134.</p>
+</section>
+<section id="frequency-effect-with-complexity-adjustment" class="level2">
+<h2 class="anchored" data-anchor-id="frequency-effect-with-complexity-adjustment">Frequency effect with complexity adjustment</h2>
+<p>The GAM with a smooth log-frequency term and linear stroke adjustment used 3852 characters. Moving from the 10th to 50th percentile in frequency speeds responses by about 82.1 ms, whereas gains shrink to 38.0 ms between the 50th and 90th percentile, indicating a flattening benefit at the top end.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>quantile_rows <span class="ot">&lt;-</span> freq_complexity<span class="sc">$</span>quantile_estimates</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">quantile =</span> <span class="fu">names</span>(quantile_rows),</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">log_freq =</span> <span class="fu">vapply</span>(quantile_rows, <span class="cf">function</span>(x) x<span class="sc">$</span>log_freq, <span class="fu">numeric</span>(<span class="dv">1</span>)),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">freq =</span> <span class="fu">vapply</span>(quantile_rows, <span class="cf">function</span>(x) x<span class="sc">$</span>freq, <span class="fu">numeric</span>(<span class="dv">1</span>)),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">rt_ms =</span> <span class="fu">vapply</span>(quantile_rows, <span class="cf">function</span>(x) x<span class="sc">$</span>rt_ms, <span class="fu">numeric</span>(<span class="dv">1</span>)),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">rt_ms_lower =</span> <span class="fu">vapply</span>(quantile_rows, <span class="cf">function</span>(x) x<span class="sc">$</span>rt_ms_lower, <span class="fu">numeric</span>(<span class="dv">1</span>)),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">rt_ms_upper =</span> <span class="fu">vapply</span>(quantile_rows, <span class="cf">function</span>(x) x<span class="sc">$</span>rt_ms_upper, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     quantile log_freq   freq  rt_ms rt_ms_lower rt_ms_upper
+10th     10th   0.0310 1.0315 752.62      748.68      756.58
+50th     50th   0.6051 1.8315 670.56      667.11      674.03
+90th     90th   2.1035 8.1949 632.59      628.04      637.18</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="fu">here</span>(<span class="st">"outputs"</span>, <span class="st">"figures"</span>, <span class="st">"freq_rt_vs_frequency.png"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../outputs/figures/freq_rt_vs_frequency.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
 <!--
 To add another analysis:
 1) create scripts/NN_slug.R that writes outputs/results/slug.yml
